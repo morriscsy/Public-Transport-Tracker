@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#07080c">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <title>刻到 HAKDOU</title>
 <meta name="apple-mobile-web-app-title" content="刻到">
 <style>
@@ -27,7 +28,7 @@ h1{margin:2px 0 0;font-size:30px;letter-spacing:-.04em}
 .now-date{margin-top:3px;color:#9a958b;font-size:11px}
 .sub{margin:0 0 10px;color:#9a958b;font-size:12px}
 .row{display:flex;gap:8px;margin-bottom:10px}
-.ghost{border:1px solid rgba(255,255,255,.12);background:#14161d;color:#f7f4ee;border-radius:999px;padding:8px 12px;font-size:12px}
+.ghost{border:1px solid rgba(255,255,255,.12);background:#14161d;color:#f7f4ee;border-radius:999px;padding:10px 16px;font-size:15px;font-weight:650}
 .ghost.on{color:#f0c36a;border-color:rgba(240,195,106,.55)}
 .search,.locbox{display:flex;gap:8px;background:#12141b;border:1px solid rgba(255,255,255,.1);border-radius:16px;padding:6px}
 .search{position:relative}
@@ -44,17 +45,36 @@ h1{margin:2px 0 0;font-size:30px;letter-spacing:-.04em}
 .quick,.tabs{display:flex;gap:8px;overflow:auto;margin:10px 0;padding-bottom:2px}
 .quick button,.tabs button{border:1px solid rgba(255,255,255,.1);background:transparent;color:#fff;border-radius:999px;padding:7px 12px;white-space:nowrap;font-size:13px}
 .tabs button.on{background:#1e2330;color:#f0c36a;border-color:rgba(240,195,106,.4)}
-.tag{background:#1a1d27;border-radius:999px;padding:6px 8px 6px 10px;display:inline-flex;align-items:center;gap:6px;margin:0 6px 6px 0}
-.tag button{border:0;background:transparent;color:#9a958b}
+.tag{background:#1a1d27;border-radius:999px;padding:5px 8px 5px 6px;display:inline-flex;align-items:center;gap:6px;margin:0 6px 6px 0;font-size:14px;border:1px solid rgba(240,195,106,.35)}
+.tag.dim{opacity:.34;border-color:transparent;filter:grayscale(.4)}
+.tag .tico{width:22px;height:22px;border-radius:7px;display:flex;align-items:center;justify-content:center}
+.tag .tico svg{width:14px;height:14px}
+.tag button{border:0;background:transparent;color:#9a958b;font-size:16px}
 .msg{color:#9a958b;font-size:12px;min-height:16px}
 .card{background:#14171f;border:1px solid rgba(255,255,255,.1);border-radius:18px;padding:14px;margin:10px 0}
 .top{display:flex;gap:10px;align-items:flex-start}
-.ico{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex:0 0 36px}
-.ico svg{width:22px;height:22px}
-.kmb{background:#8b1e1e}.ctb{background:#c45a12}.mtr{background:#0d6b4c}
-.bus{font-size:clamp(20px,6vw,28px);font-weight:760;line-height:1}
-.meta{color:#9a958b;font-size:clamp(11px,3.2vw,13px);margin-top:2px;overflow-wrap:anywhere}
-.to{margin-left:auto;text-align:right;color:#9a958b;font-size:12px}
+.ico{width:36px;height:36px;border-radius:11px;display:flex;align-items:center;justify-content:center;flex:0 0 36px}
+.ico svg{width:24px;height:24px}
+.kmb{background:#8b1e1e}.ctb{background:#c45a12}
+.bus{font-size:clamp(22px,6.4vw,30px);font-weight:780;line-height:1}
+.namerow{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.stopn{font-size:clamp(14px,3.8vw,16px);font-weight:700;line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.linechip{display:inline-block;font-size:11px;font-weight:700;padding:2px 7px;border-radius:999px;margin-top:4px;color:#fff}
+.meta{color:#9a958b;font-size:12px;margin-top:3px;overflow-wrap:anywhere}
+.cardhead{display:flex;gap:8px;align-items:stretch}
+.cardmain{flex:1;min-width:0}
+.to{margin-top:8px;display:inline-flex;align-items:center;gap:6px;background:#2a2318;border:1px solid rgba(240,195,106,.45);color:#f0c36a;font-size:13px;font-weight:700;padding:5px 10px;border-radius:999px}
+.to b{color:#fff;font-size:15px;font-weight:780}
+.times.mini{flex:0 0 58%;max-width:248px;margin-top:0;gap:5px;align-self:stretch}
+.times.mini .slot{padding:10px 4px;display:flex;flex-direction:column;justify-content:center;min-height:100%}
+.times.mini .big{font-size:20px;margin:6px 0 4px;line-height:1}
+.times.mini .lab{font-size:11px}
+.times.mini .clk{font-size:12px}
+.cardmap{height:168px;width:100%;border-radius:14px;overflow:hidden;margin-top:10px;background:#1c2128}
+.cardmap .leaflet-control-attribution{display:none}
+.veh{width:28px;height:16px;filter:drop-shadow(0 3px 4px rgba(0,0,0,.5))}
+.youdot{width:14px;height:14px;border-radius:50%;background:#4da3ff;border:3px solid #fff;box-shadow:0 0 0 6px rgba(77,163,255,.25)}
+#suggest li{display:flex;align-items:center;gap:10px}
 .times{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-top:12px}
 .slot{background:rgba(255,255,255,.04);border-radius:12px;padding:8px 4px;text-align:center}
 .lab{font-size:10px;color:#9a958b}
@@ -158,6 +178,7 @@ h1{margin:2px 0 0;font-size:30px;letter-spacing:-.04em}
     <button class="gbtn" id="gateGps" type="button">開啟定位並開始</button>
   </div>
 </div>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
 (function(){
 var KMB="https://data.etabus.gov.hk/v1/transport/kmb";
@@ -165,6 +186,7 @@ var CTB="https://rt.data.gov.hk/v2/transport/citybus";
 var MTR_ETA="https://rt.data.gov.hk/v1/transport/mtr/getSchedule.php";
 var BUS_MAX=800, HARD_CAP=1500, MTR_MAX=900;
 var LINE_NAME={AEL:"機場快綫",TCL:"東涌綫",TML:"屯馬綫",TKL:"將軍澳綫",EAL:"東鐵綫",SIL:"南港島綫",TWL:"荃灣綫",ISL:"港島綫",KTL:"觀塘綫",DRL:"迪士尼綫"};
+var LINE_COLOR={AEL:"#00888A",TCL:"#F7943E",TML:"#923416",TKL:"#7D499D",EAL:"#53B7E8",SIL:"#B6BD00",TWL:"#E3002B",ISL:"#0071CE",KTL:"#00A14B",DRL:"#F173AC"};
 var MTR_STATIONS=[{"c":"ADM","zh":"金鐘","en":"Admiralty","lat":22.27942,"lng":114.16435,"ln":["EAL","ISL","SIL","TWL"]},{"c":"AIR","zh":"機場","en":"Airport","lat":22.31592,"lng":113.93648,"ln":["AEL"]},{"c":"AUS","zh":"柯士甸","en":"Austin","lat":22.30491,"lng":114.16632,"ln":["TML"]},{"c":"AWE","zh":"博覽館","en":"AsiaWorld-Expo","lat":22.32175,"lng":113.94123,"ln":["AEL"]},{"c":"CAB","zh":"銅鑼灣","en":"Causeway Bay","lat":22.28019,"lng":114.18424,"ln":["ISL"]},{"c":"CEN","zh":"中環","en":"Central","lat":22.28215,"lng":114.15768,"ln":["ISL","TWL"]},{"c":"CHH","zh":"彩虹","en":"Choi Hung","lat":22.33497,"lng":114.20904,"ln":["KTL"]},{"c":"CHW","zh":"柴灣","en":"Chai Wan","lat":22.26458,"lng":114.23711,"ln":["ISL"]},{"c":"CIO","zh":"第一城","en":"City One","lat":22.38296,"lng":114.20363,"ln":["TML"]},{"c":"CKT","zh":"車公廟","en":"Che Kung Temple","lat":22.37477,"lng":114.18589,"ln":["TML"]},{"c":"CSW","zh":"長沙灣","en":"Cheung Sha Wan","lat":22.33555,"lng":114.15605,"ln":["TWL"]},{"c":"DIH","zh":"鑽石山","en":"Diamond Hill","lat":22.34003,"lng":114.20165,"ln":["KTL","TML"]},{"c":"DIS","zh":"迪士尼","en":"Disneyland Resort","lat":22.31549,"lng":114.04485,"ln":["DRL"]},{"c":"ETS","zh":"尖東","en":"East Tsim Sha Tsui","lat":22.29531,"lng":114.17465,"ln":["TML"]},{"c":"EXC","zh":"會展","en":"Exhibition Centre","lat":22.28165,"lng":114.17531,"ln":["EAL"]},{"c":"FAN","zh":"粉嶺","en":"Fanling","lat":22.4921,"lng":114.13867,"ln":["EAL"]},{"c":"FOH","zh":"炮台山","en":"Fortress Hill","lat":22.28791,"lng":114.19359,"ln":["ISL"]},{"c":"FOT","zh":"火炭","en":"Fo Tan","lat":22.39582,"lng":114.1985,"ln":["EAL"]},{"c":"HAH","zh":"坑口","en":"Hang Hau","lat":22.31574,"lng":114.26431,"ln":["TKL"]},{"c":"HEO","zh":"恆安","en":"Heng On","lat":22.41786,"lng":114.22588,"ln":["TML"]},{"c":"HFC","zh":"杏花邨","en":"Heng Fa Chuen","lat":22.27664,"lng":114.23971,"ln":["ISL"]},{"c":"HIK","zh":"顯徑","en":"Hin Keng","lat":22.36372,"lng":114.17074,"ln":["TML"]},{"c":"HKU","zh":"香港大學","en":"HKU","lat":22.28405,"lng":114.13556,"ln":["ISL"]},{"c":"HOK","zh":"香港","en":"Hong Kong","lat":22.28467,"lng":114.15822,"ln":["AEL","TCL"]},{"c":"HOM","zh":"何文田","en":"Ho Man Tin","lat":22.30939,"lng":114.18259,"ln":["KTL","TML"]},{"c":"HUH","zh":"紅磡","en":"Hung Hom","lat":22.30299,"lng":114.18218,"ln":["EAL","TML"]},{"c":"JOR","zh":"佐敦","en":"Jordan","lat":22.30481,"lng":114.17165,"ln":["TWL"]},{"c":"KAT","zh":"啟德","en":"Kai Tak","lat":22.33042,"lng":114.19935,"ln":["TML"]},{"c":"KET","zh":"堅尼地城","en":"Kennedy Town","lat":22.28121,"lng":114.1284,"ln":["ISL"]},{"c":"KOB","zh":"九龍灣","en":"Kowloon Bay","lat":22.32346,"lng":114.214,"ln":["KTL"]},{"c":"KOT","zh":"九龍塘","en":"Kowloon Tong","lat":22.33712,"lng":114.17578,"ln":["EAL","KTL"]},{"c":"KOW","zh":"九龍","en":"Kowloon","lat":22.30426,"lng":114.16144,"ln":["AEL","TCL"]},{"c":"KSR","zh":"錦上路","en":"Kam Sheung Road","lat":22.43513,"lng":114.06318,"ln":["TML"]},{"c":"KWF","zh":"葵芳","en":"Kwai Fong","lat":22.3568,"lng":114.12779,"ln":["TWL"]},{"c":"KWH","zh":"葵興","en":"Kwai Hing","lat":22.36307,"lng":114.13122,"ln":["TWL"]},{"c":"KWT","zh":"觀塘","en":"Kwun Tong","lat":22.31209,"lng":114.2265,"ln":["KTL"]},{"c":"LAK","zh":"茘景","en":"Lai King","lat":22.34834,"lng":114.12619,"ln":["TCL","TWL"]},{"c":"LAT","zh":"藍田","en":"Lam Tin","lat":22.30683,"lng":114.23274,"ln":["KTL"]},{"c":"LCK","zh":"茘枝角","en":"Lai Chi Kok","lat":22.33725,"lng":114.14796,"ln":["TWL"]},{"c":"LET","zh":"利東","en":"Lei Tung","lat":22.24184,"lng":114.156,"ln":["SIL"]},{"c":"LHP","zh":"康城","en":"LOHAS Park","lat":22.29559,"lng":114.26873,"ln":["TKL"]},{"c":"LMC","zh":"落馬洲","en":"Lok Ma Chau","lat":22.51447,"lng":114.06569,"ln":["EAL"]},{"c":"LOF","zh":"樂富","en":"Lok Fu","lat":22.33801,"lng":114.18703,"ln":["KTL"]},{"c":"LOP","zh":"朗屏","en":"Long Ping","lat":22.44763,"lng":114.02545,"ln":["TML"]},{"c":"LOW","zh":"羅湖","en":"Lo Wu","lat":22.52764,"lng":114.11323,"ln":["EAL"]},{"c":"MEF","zh":"美孚","en":"Mei Foo","lat":22.33793,"lng":114.13639,"ln":["TML","TWL"]},{"c":"MKK","zh":"旺角東","en":"Mong Kok East","lat":22.32202,"lng":114.17259,"ln":["EAL"]},{"c":"MOK","zh":"旺角","en":"Mong Kok","lat":22.3193,"lng":114.16935,"ln":["KTL","TWL"]},{"c":"MOS","zh":"馬鞍山","en":"Ma On Shan","lat":22.42491,"lng":114.23198,"ln":["TML"]},{"c":"NAC","zh":"南昌","en":"Nam Cheong","lat":22.32688,"lng":114.1535,"ln":["TCL","TML"]},{"c":"NOP","zh":"北角","en":"North Point","lat":22.29118,"lng":114.20039,"ln":["ISL","TKL"]},{"c":"NTK","zh":"牛頭角","en":"Ngau Tau Kok","lat":22.3155,"lng":114.21898,"ln":["KTL"]},{"c":"OCP","zh":"海洋公園","en":"Ocean Park","lat":22.2487,"lng":114.17432,"ln":["SIL"]},{"c":"OLY","zh":"奧運","en":"Olympic","lat":22.31779,"lng":114.16025,"ln":["TCL"]},{"c":"POA","zh":"寶琳","en":"Po Lam","lat":22.32256,"lng":114.25787,"ln":["TKL"]},{"c":"PRE","zh":"太子","en":"Prince Edward","lat":22.32441,"lng":114.16828,"ln":["KTL","TWL"]},{"c":"QUB","zh":"鰂魚涌","en":"Quarry Bay","lat":22.28857,"lng":114.2087,"ln":["ISL","TKL"]},{"c":"SHM","zh":"石門","en":"Shek Mun","lat":22.38788,"lng":114.20852,"ln":["TML"]},{"c":"SHS","zh":"上水","en":"Sheung Shui","lat":22.50162,"lng":114.12753,"ln":["EAL"]},{"c":"SHT","zh":"沙田","en":"Sha Tin","lat":22.38213,"lng":114.18691,"ln":["EAL"]},{"c":"SHW","zh":"上環","en":"Sheung Wan","lat":22.2866,"lng":114.15201,"ln":["ISL"]},{"c":"SIH","zh":"兆康","en":"Siu Hong","lat":22.41153,"lng":113.9788,"ln":["TML"]},{"c":"SKM","zh":"石硤尾","en":"Shek Kip Mei","lat":22.33179,"lng":114.16882,"ln":["KTL"]},{"c":"SKW","zh":"筲箕灣","en":"Shau Kei Wan","lat":22.27923,"lng":114.22895,"ln":["ISL"]},{"c":"SOH","zh":"海怡半島","en":"South Horizons","lat":22.24284,"lng":114.14884,"ln":["SIL"]},{"c":"SSP","zh":"深水埗","en":"Sham Shui Po","lat":22.33089,"lng":114.16212,"ln":["TWL"]},{"c":"STW","zh":"沙田圍","en":"Sha Tin Wai","lat":22.37691,"lng":114.19481,"ln":["TML"]},{"c":"SUN","zh":"欣澳","en":"Sunny Bay","lat":22.33211,"lng":114.02904,"ln":["DRL","TCL"]},{"c":"SUW","zh":"宋皇臺","en":"Sung Wong Toi","lat":22.32562,"lng":114.19061,"ln":["TML"]},{"c":"SWH","zh":"西灣河","en":"Sai Wan Ho","lat":22.28218,"lng":114.22182,"ln":["ISL"]},{"c":"SYP","zh":"西營盤","en":"Sai Ying Pun","lat":22.28551,"lng":114.1427,"ln":["ISL"]},{"c":"TAK","zh":"太古","en":"Tai Koo","lat":22.28465,"lng":114.21648,"ln":["ISL"]},{"c":"TAP","zh":"大埔墟","en":"Tai Po Market","lat":22.44458,"lng":114.17039,"ln":["EAL"]},{"c":"TAW","zh":"大圍","en":"Tai Wai","lat":22.37276,"lng":114.17869,"ln":["EAL","TML"]},{"c":"TIH","zh":"天后","en":"Tin Hau","lat":22.28224,"lng":114.19185,"ln":["ISL"]},{"c":"TIK","zh":"調景嶺","en":"Tiu Keng Leng","lat":22.30426,"lng":114.25264,"ln":["KTL","TKL"]},{"c":"TIS","zh":"天水圍","en":"Tin Shui Wai","lat":22.44788,"lng":114.00447,"ln":["TML"]},{"c":"TKO","zh":"將軍澳","en":"Tseung Kwan O","lat":22.30744,"lng":114.26001,"ln":["TKL"]},{"c":"TKW","zh":"土瓜灣","en":"To Kwa Wan","lat":22.31791,"lng":114.18762,"ln":["TML"]},{"c":"TSH","zh":"大水坑","en":"Tai Shui Hang","lat":22.40819,"lng":114.2226,"ln":["TML"]},{"c":"TST","zh":"尖沙咀","en":"Tsim Sha Tsui","lat":22.2977,"lng":114.17218,"ln":["TWL"]},{"c":"TSW","zh":"荃灣","en":"Tsuen Wan","lat":22.37352,"lng":114.11808,"ln":["TWL"]},{"c":"TSY","zh":"青衣","en":"Tsing Yi","lat":22.3584,"lng":114.10728,"ln":["AEL","TCL"]},{"c":"TUC","zh":"東涌","en":"Tung Chung","lat":22.28918,"lng":113.94127,"ln":["TCL"]},{"c":"TUM","zh":"屯門","en":"Tuen Mun","lat":22.39511,"lng":113.97319,"ln":["TML"]},{"c":"TWH","zh":"大窩口","en":"Tai Wo Hau","lat":22.37076,"lng":114.12501,"ln":["TWL"]},{"c":"TWO","zh":"太和","en":"Tai Wo","lat":22.45107,"lng":114.16118,"ln":["EAL"]},{"c":"TWW","zh":"荃灣西","en":"Tsuen Wan West","lat":22.36839,"lng":114.10966,"ln":["TML"]},{"c":"UNI","zh":"大學","en":"University","lat":22.41366,"lng":114.21004,"ln":["EAL"]},{"c":"WAC","zh":"灣仔","en":"Wan Chai","lat":22.27755,"lng":114.17263,"ln":["ISL"]},{"c":"WCH","zh":"黃竹坑","en":"Wong Chuk Hang","lat":22.24798,"lng":114.16799,"ln":["SIL"]},{"c":"WHA","zh":"黃埔","en":"Whampoa","lat":22.30481,"lng":114.18983,"ln":["KTL"]},{"c":"WKS","zh":"烏溪沙","en":"Wu Kai Sha","lat":22.42915,"lng":114.24385,"ln":["TML"]},{"c":"WTS","zh":"黃大仙","en":"Wong Tai Sin","lat":22.34168,"lng":114.19387,"ln":["KTL"]},{"c":"YAT","zh":"油塘","en":"Yau Tong","lat":22.298,"lng":114.237,"ln":["KTL","TKL"]},{"c":"YMT","zh":"油麻地","en":"Yau Ma Tei","lat":22.31283,"lng":114.17066,"ln":["KTL","TWL"]},{"c":"YUL","zh":"元朗","en":"Yuen Long","lat":22.44607,"lng":114.03517,"ln":["TML"]}];
 var MTR_BY={}; MTR_STATIONS.forEach(function(s){MTR_BY[s.c]=s;});
 var home=null;
@@ -212,14 +234,24 @@ function labelOf(it){
   if(it.t==="mtr"){var s=MTR_BY[it.k]; return s?s.zh:it.k;}
   return it.k;
 }
-function icon(kind){
-  if(kind==="mtr") return '<div class="ico mtr"><svg viewBox="0 0 24 24" fill="#7dffc2"><path d="M12 2c-4.4 0-8 1.2-8 4v9c0 1.7 1.3 3 3 3l-1.5 2h2.2L9 18h6l1.3 2h2.2L17 18c1.7 0 3-1.3 3-3V6c0-2.8-3.6-4-8-4zm-3.2 13.2a1.2 1.2 0 1 1 0-2.4 1.2 1.2 0 0 1 0 2.4zm6.4 0a1.2 1.2 0 1 1 0-2.4 1.2 1.2 0 0 1 0 2.4zM6 7.2h12V12H6V7.2z"/></svg></div>';
-  if(kind==="CTB") return '<div class="ico ctb"><svg viewBox="0 0 24 24" fill="#ffd7a8"><path d="M5 5.5C5 4.1 8.1 3 12 3s7 1.1 7 2.5V17c0 .8-.7 1.5-1.5 1.5L19 20h-1.8l-1.4-1.5H8.2L6.8 20H5l1.5-1.5C5.7 18.5 5 17.8 5 17V5.5zM8 16.2a1.2 1.2 0 1 0 0-2.4 1.2 1.2 0 0 0 0 2.4zm8 0a1.2 1.2 0 1 0 0-2.4 1.2 1.2 0 0 0 0 2.4zM6.6 6.4h10.8v6.2H6.6V6.4z"/></svg></div>';
-  return '<div class="ico kmb"><svg viewBox="0 0 24 24" fill="#ffd0d0"><path d="M5 5.5C5 4.1 8.1 3 12 3s7 1.1 7 2.5V17c0 .8-.7 1.5-1.5 1.5L19 20h-1.8l-1.4-1.5H8.2L6.8 20H5l1.5-1.5C5.7 18.5 5 17.8 5 17V5.5zM8 16.2a1.2 1.2 0 1 0 0-2.4 1.2 1.2 0 0 0 0 2.4zm8 0a1.2 1.2 0 1 0 0-2.4 1.2 1.2 0 0 0 0 2.4zM6.6 6.4h10.8v6.2H6.6V6.4z"/></svg></div>';
+function busSvg(fill){return '<svg viewBox="0 0 24 24" fill="'+fill+'"><path d="M5 5.5C5 4.1 8.1 3 12 3s7 1.1 7 2.5V17c0 .8-.7 1.5-1.5 1.5L19 20h-1.8l-1.4-1.5H8.2L6.8 20H5l1.5-1.5C5.7 18.5 5 17.8 5 17V5.5zM8 16.2a1.2 1.2 0 1 0 0-2.4 1.2 1.2 0 0 0 0 2.4zm8 0a1.2 1.2 0 1 0 0-2.4 1.2 1.2 0 0 0 0 2.4zM6.6 6.4h10.8v6.2H6.6V6.4z"/></svg>';}
+function trainSvg(){return '<svg viewBox="0 0 24 24" fill="#fff"><path d="M7 4h10c2 0 3 1.2 3 3v8.2c0 1.4-1 2.5-2.3 2.7L19 20h-1.7l-1.3-2H8l-1.3 2H5l1.3-2.1C5 17.7 4 16.6 4 15.2V7c0-1.8 1-3 3-3zm.8 11.4a1.2 1.2 0 1 0 0-2.4 1.2 1.2 0 0 0 0 2.4zm8.4 0a1.2 1.2 0 1 0 0-2.4 1.2 1.2 0 0 0 0 2.4zM6.6 6.6h10.8V12H6.6V6.6z"/></svg>';}
+function lineOf(it){
+  var s=MTR_BY[it.k]; return s&&s.ln&&s.ln[0];
+}
+function icon(kind,line){
+  if(kind==="mtr") return '<div class="ico" style="background:'+(LINE_COLOR[line]||"#0d6b4c")+'">'+trainSvg()+'</div>';
+  if(kind==="CTB") return '<div class="ico ctb">'+busSvg("#ffd7a8")+'</div>';
+  return '<div class="ico kmb">'+busSvg("#ffd0d0")+'</div>';
+}
+function tagIcon(it){
+  if(it.t==="mtr") return '<span class="tico" style="background:'+(LINE_COLOR[lineOf(it)]||"#0d6b4c")+'">'+trainSvg()+'</span>';
+  var ctb=state.ctbRoutes[it.k]&&!state.kmbRoutes[it.k];
+  return '<span class="tico '+(ctb?"ctb":"kmb")+'">'+busSvg("#fff")+'</span>';
 }
 function renderTags(){
   $("tags").innerHTML=state.items.map(function(it,i){
-    return '<span class="tag"><b>'+labelOf(it)+'</b><button type="button" data-i="'+i+'">×</button></span>';
+    return '<span class="tag'+(it.on===false?" dim":"")+'" data-tog="'+i+'">'+tagIcon(it)+'<b>'+labelOf(it)+'</b><button type="button" data-i="'+i+'">×</button></span>';
   }).join("");
 }
 function findMtr(q){
@@ -242,7 +274,7 @@ function renderSuggest(q){
   box.style.display="block";
   box.innerHTML=hits.map(function(h){
     var lab=h.t==="mtr"?((MTR_BY[h.k]||{}).zh||h.k):h.k;
-    return '<li data-t="'+h.t+'" data-k="'+h.k+'"><strong>'+lab+'</strong><small>'+h.hint+'</small></li>';
+    return '<li data-t="'+h.t+'" data-k="'+h.k+'">'+tagIcon(h)+'<span><strong>'+lab+'</strong><small>'+h.hint+'</small></span></li>';
   }).join("");
 }
 function addItem(t,k){
@@ -294,7 +326,13 @@ function bindLiveSearch(id){
 bindLiveSearch("locQ");
 bindLiveSearch("gateQ");
 $("suggest").addEventListener("click",function(e){var li=e.target.closest("li"); if(li) addItem(li.getAttribute("data-t"),li.getAttribute("data-k"));});
-$("tags").addEventListener("click",function(e){var i=e.target.getAttribute("data-i"); if(i==null)return; state.items.splice(+i,1); persist(); renderTags(); refresh();});
+$("tags").addEventListener("click",function(e){
+  var x=e.target.getAttribute("data-i");
+  if(x!=null){ state.items.splice(+x,1); persist(); renderTags(); refresh(); return; }
+  var t=e.target.closest("[data-tog]"); if(!t) return;
+  var it=state.items[+t.getAttribute("data-tog")]; if(!it) return;
+  it.on=it.on===false; persist(); renderTags(); paint();
+});
 function pickNearby(list){
   var byBound={}, out=[];
   list.filter(function(x){return x.dist<=HARD_CAP;}).forEach(function(x){
@@ -494,11 +532,13 @@ function kmbNearby(route){
     return Promise.all(ids.map(getKmbStop)).then(function(){
       var all=[],seen={};
       parts.forEach(function(p){
+        var path=[];
         p.rows.forEach(function(rs){
           var stop=state.kmbStops[rs.stop]; if(!stop) return;
           var d=dist(state.loc.lat,state.loc.lng,Number(stop.lat),Number(stop.long));
           var key=rs.stop+"-"+p.v.bound; if(seen[key]) return; seen[key]=1;
-          all.push({kind:"bus",co:"KMB",coName:"九巴／龍運",route:route,stopId:rs.stop,name:stop.name_tc,nameEn:stop.name_en,dist:Math.round(d),bound:p.v.bound,serviceType:String(p.v.service_type||"1"),dest:p.v.dest_tc||""});
+          path.push({lat:Number(stop.lat),lng:Number(stop.long)});
+          all.push({kind:"bus",co:"KMB",coName:"九巴／龍運",route:route,stopId:rs.stop,name:stop.name_tc,nameEn:stop.name_en,lat:Number(stop.lat),lng:Number(stop.long),path:path.slice(-14),dist:Math.round(d),bound:p.v.bound,serviceType:String(p.v.service_type||"1"),dest:p.v.dest_tc||""});
         });
       });
       all.sort(function(a,b){return a.dist-b.dist;});
@@ -521,11 +561,13 @@ function ctbNearby(route){
         var out=[],seen={};
         parts.forEach(function(p){
           var bound=p.dir==="inbound"?"I":"O";
+          var path=[];
           p.rows.forEach(function(rs){
             var stop=ctbStopCache[rs.stop]; if(!stop||!stop.lat) return;
             var d=dist(state.loc.lat,state.loc.lng,Number(stop.lat),Number(stop.long));
             var key=rs.stop+"-"+bound; if(seen[key]) return; seen[key]=1;
-            out.push({kind:"bus",co:"CTB",coName:"城巴",route:route,stopId:rs.stop,name:stop.name_tc||stop.name_en,nameEn:stop.name_en,dist:Math.round(d),bound:bound,serviceType:"1",dest:bound==="O"?(meta.dest_tc||meta.orig_tc||""):(meta.orig_tc||meta.dest_tc||"")});
+            path.push({lat:Number(stop.lat),lng:Number(stop.long)});
+            out.push({kind:"bus",co:"CTB",coName:"城巴",route:route,stopId:rs.stop,name:stop.name_tc||stop.name_en,nameEn:stop.name_en,lat:Number(stop.lat),lng:Number(stop.long),path:path.slice(-14),dist:Math.round(d),bound:bound,serviceType:"1",dest:bound==="O"?(meta.dest_tc||meta.orig_tc||""):(meta.orig_tc||meta.dest_tc||"")});
           });
         });
         out.sort(function(a,b){return a.dist-b.dist;});
@@ -559,8 +601,8 @@ function mtrCardsFor(code){
         var rows=(pack[dir]||[]).filter(function(x){return x.valid!=="N";}).slice(0,3);
         if(!rows.length) return;
         cards.push({
-          kind:"mtr",co:"MTR",coName:"港鐵",route:LINE_NAME[line]||line,stopId:code,name:sta.zh,nameEn:sta.en,
-          dist:Math.round(d),dest:(MTR_BY[rows[0].dest]||{}).zh||rows[0].dest,
+          kind:"mtr",co:"MTR",coName:"港鐵",route:LINE_NAME[line]||line,line:line,stopId:code,name:sta.zh,nameEn:sta.en,
+          lat:sta.lat,lng:sta.lng,path:[{lat:sta.lat-0.004,lng:sta.lng-0.003},{lat:sta.lat,lng:sta.lng}],dist:Math.round(d),dest:(MTR_BY[rows[0].dest]||{}).zh||rows[0].dest,
           etas:rows.map(function(x){return {eta:x.time,dest:(MTR_BY[x.dest]||{}).zh||x.dest,rmk:x.plat?("月台 "+x.plat):"",ttnt:x.ttnt,sched:false};})
         });
       });
@@ -580,12 +622,19 @@ function slot(row,i){
   var big=m<=1?"即將到":(m+"分");
   var klass=row.sched?"sched":(m<=5?"soon":"wait");
   var note=row.sched?"原定班次":(row.rmk||"");
-  return '<div class="slot '+klass+'"><div class="lab">第 '+i+' 班'+(row.sched?" · 時間表":" · 實時")+'</div><div class="big">'+big+'</div><div class="clk">'+(row.eta?clock(row.eta):"—")+(note && !row.sched?(" · "+note):"")+'</div></div>';
+  return '<div class="slot '+klass+'"><div class="lab">第 '+i+' 班</div><div class="big">'+big+'</div><div class="clk">'+(row.eta?clock(row.eta):"—")+'</div></div>';
 }
 function paint(){
+  var on=state.items.filter(function(it){return it.on!==false;});
   var cards=state.cards.filter(function(c){
-    if(state.tab==="bus") return c.kind==="bus";
-    if(state.tab==="mtr") return c.kind==="mtr";
+    if(state.tab==="bus" && c.kind!=="bus") return false;
+    if(state.tab==="mtr" && c.kind!=="mtr") return false;
+    if(on.length && on.length<state.items.length){
+      return on.some(function(it){
+        if(it.t==="bus") return c.kind==="bus" && String(c.route)===String(it.k);
+        return c.kind==="mtr" && (c.stopId===it.k || c.name===labelOf(it));
+      });
+    }
     return true;
   });
   if(!state.items.length){
@@ -596,14 +645,85 @@ function paint(){
     $("feed").innerHTML='<div class="card">呢一頁暫時無班次。可轉「全部」或行近啲站。</div>';
     return;
   }
+  var mapN=0;
   $("feed").innerHTML=cards.map(function(c){
     var dest=(c.etas[0]&&c.etas[0].dest)||c.dest||"—";
     var live=c.etas.some(function(e){return e&&!e.sched;});
-    return '<article class="card"><div class="top">'+icon(c.kind==="mtr"?"mtr":c.co)+
-      '<div><div class="bus">'+c.route+'</div><div class="meta">'+c.coName+' · '+c.name+' · '+c.dist+'米</div></div>'+
-      '<div class="to">往<br><b style="color:#fff">'+dest+'</b>'+(live?"":"<div class=hint>官方暫時只有時間表</div>")+'</div></div>'+
-      '<div class="times">'+[0,1,2].map(function(i){return slot(c.etas[i],i+1);}).join("")+'</div></article>';
+    var col=c.kind==="mtr"?(LINE_COLOR[c.line]||"#0d6b4c"):"";
+    var title=c.kind==="mtr"?c.name:c.route;
+    var sub=c.kind==="mtr"
+      ? '<span class="linechip" style="background:'+col+'">'+c.route+'</span><div class="meta">'+c.dist+'米</div>'
+      : '<div class="stopn">'+c.name+'</div><div class="meta">'+c.coName+' · '+c.dist+'米</div>';
+    var mid=c.kind==="bus"?"map"+(mapN++):"";
+    return '<article class="card"><div class="cardhead"><div class="cardmain"><div class="namerow">'+icon(c.kind==="mtr"?"mtr":c.co,c.line)+'<div class="bus">'+title+'</div></div>'+sub+
+      '<div class="to">往 <b>'+dest+'</b></div></div>'+
+      '<div class="times mini">'+[0,1,2].map(function(i){return slot(c.etas[i],i+1);}).join("")+'</div></div>'+
+      (mid?'<div class="cardmap" id="'+mid+'"></div>':'')+'</article>';
   }).join("");
+  mountCardMaps(cards.filter(function(c){return c.kind==="bus";}));
+}
+function busTop(){
+  return '<svg viewBox="0 0 28 16" width="28" height="16"><rect x="1" y="3" width="26" height="10" rx="5" fill="#eef2f5" stroke="#c5ccd2"/><rect x="17.5" y="4.4" width="8" height="7.2" rx="2.2" fill="#8fd3ff"/><rect x="4" y="5" width="10" height="6" rx="1.2" fill="#d7dee4"/><circle cx="8" cy="13.2" r="1.6" fill="#2a2e32"/><circle cx="20" cy="13.2" r="1.6" fill="#2a2e32"/></svg>';
+}
+function headingAt(path,t){
+  if(!path||path.length<2) return 0;
+  var p=alongPath(path,t), n=alongPath(path,Math.min(1,t+0.04));
+  if(!p||!n) return 0;
+  return Math.atan2(n.lng-p.lng, n.lat-p.lat)*180/Math.PI;
+}
+function alongPath(path,t){
+  if(!path||!path.length) return null;
+  if(path.length===1) return path[0];
+  t=Math.max(0,Math.min(1,t));
+  var seg=[], tot=0;
+  for(var i=1;i<path.length;i++){
+    var d=dist(path[i-1].lat,path[i-1].lng,path[i].lat,path[i].lng);
+    seg.push(d); tot+=d;
+  }
+  if(tot<1) return path[path.length-1];
+  var target=tot*t, acc=0;
+  for(var j=1;j<path.length;j++){
+    if(acc+seg[j-1]>=target){
+      var r=(target-acc)/Math.max(seg[j-1],1);
+      return {lat:path[j-1].lat+(path[j].lat-path[j-1].lat)*r, lng:path[j-1].lng+(path[j].lng-path[j-1].lng)*r};
+    }
+    acc+=seg[j-1];
+  }
+  return path[path.length-1];
+}
+function etaProgress(c){
+  var m=999;
+  if(c.etas&&c.etas[0]){
+    if(c.etas[0].ttnt!=null&&c.etas[0].ttnt!=="") m=Number(c.etas[0].ttnt);
+    else if(c.etas[0].eta) m=minsLeft(c.etas[0].eta);
+  }
+  if(m==null||m<=1) return 0.97;
+  var span=Math.max(6,(c.path&&c.path.length||6)*1.6);
+  return Math.max(0.08, 1-Math.min(m,span)/span);
+}
+var miniMaps=[];
+function mountCardMaps(cards){
+  miniMaps.forEach(function(m){ try{m.remove();}catch(e){} });
+  miniMaps=[];
+  if(!window.L) return;
+  cards.slice(0,6).forEach(function(c,i){
+    if(!c.lat||!c.lng) return;
+    var el=$("map"+i); if(!el) return;
+    var map=L.map(el,{zoomControl:false,attributionControl:false,dragging:true,scrollWheelZoom:false});
+    L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",{maxZoom:19}).addTo(map);
+    var path=c.path&&c.path.length?c.path:[{lat:c.lat,lng:c.lng}];
+    if(path.length>1) L.polyline(path.map(function(p){return [p.lat,p.lng];}),{color:"#f0c36a",weight:3,opacity:.75}).addTo(map);
+    L.circleMarker([c.lat,c.lng],{radius:6,color:"#fff",fillColor:"#f0c36a",fillOpacity:1,weight:2}).addTo(map);
+    var prog=etaProgress(c);
+    var pos=alongPath(path, prog)||{lat:c.lat,lng:c.lng};
+    var hd=headingAt(path,prog);
+    var vhtml='<div class="veh" style="transform:rotate('+hd+'deg)">'+busTop()+'</div>';
+    var veh=L.marker([pos.lat,pos.lng],{icon:L.divIcon({className:"",html:vhtml,iconSize:[28,16],iconAnchor:[14,8]})}).addTo(map);
+    map.setView([pos.lat,pos.lng],16);
+    setTimeout(function(){map.invalidateSize();},120);
+    miniMaps.push(map);
+    c._veh=veh; c._path=path;
+  });
 }
 function refresh(){
   if(!state.loc){ say("請先設定常用位置或開啟定位"); return; }
