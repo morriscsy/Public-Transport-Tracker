@@ -45,8 +45,9 @@ h1{margin:2px 0 0;font-size:30px;letter-spacing:-.04em}
 .quick,.tabs{display:flex;gap:8px;overflow:auto;margin:10px 0;padding-bottom:2px}
 .quick button,.tabs button{border:1px solid rgba(255,255,255,.1);background:transparent;color:#fff;border-radius:999px;padding:7px 12px;white-space:nowrap;font-size:13px}
 .tabs button.on{background:#1e2330;color:#f0c36a;border-color:rgba(240,195,106,.4)}
-.tag{background:#1a1d27;border-radius:999px;padding:5px 8px 5px 6px;display:inline-flex;align-items:center;gap:6px;margin:0 6px 6px 0;font-size:14px;border:1px solid rgba(240,195,106,.35)}
-.tag.dim{opacity:.34;border-color:transparent;filter:grayscale(.4)}
+.tag{background:#1a1d27;border-radius:999px;padding:5px 8px 5px 6px;display:inline-flex;align-items:center;gap:6px;margin:0 6px 6px 0;font-size:14px;border:1px solid rgba(240,195,106,.35);cursor:pointer;-webkit-tap-highlight-color:transparent}
+.tag.dim{opacity:.38;border-color:rgba(255,255,255,.08);filter:grayscale(.7);background:#101218}
+.tag .x{border:0;background:transparent;color:#9a958b;font-size:16px;padding:0 2px 0 4px;line-height:1}
 .tag .tico{width:22px;height:22px;border-radius:7px;display:flex;align-items:center;justify-content:center}
 .tag .tico svg{width:14px;height:14px}
 .tag button{border:0;background:transparent;color:#9a958b;font-size:16px}
@@ -70,9 +71,11 @@ h1{margin:2px 0 0;font-size:30px;letter-spacing:-.04em}
 .times.mini .big{font-size:20px;margin:6px 0 4px;line-height:1}
 .times.mini .lab{font-size:11px}
 .times.mini .clk{font-size:12px}
-.cardmap{height:168px;width:100%;border-radius:14px;overflow:hidden;margin-top:10px;background:#1c2128}
+.cardmap{position:relative;height:168px;width:100%;border-radius:14px;overflow:hidden;margin-top:10px;background:#1c2128}
 .cardmap .leaflet-control-attribution{display:none}
 .veh{width:28px;height:16px;filter:drop-shadow(0 3px 4px rgba(0,0,0,.5))}
+.herepin{position:absolute;left:8px;bottom:8px;z-index:500;max-width:78%;background:rgba(12,14,18,.82);border:1px solid rgba(240,195,106,.4);color:#f7f4ee;font-size:11px;font-weight:650;padding:6px 8px;border-radius:10px;line-height:1.35;pointer-events:none}
+.herepin b{color:#f0c36a}
 .youdot{width:14px;height:14px;border-radius:50%;background:#4da3ff;border:3px solid #fff;box-shadow:0 0 0 6px rgba(77,163,255,.25)}
 #suggest li{display:flex;align-items:center;gap:10px}
 .times{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-top:12px}
@@ -283,9 +286,11 @@ function tagIcon(it){
   var ctb=state.ctbRoutes[it.k]&&!state.kmbRoutes[it.k];
   return '<span class="tico '+(ctb?"ctb":"kmb")+'">'+busSvg("#fff")+'</span>';
 }
+function itemKey(it){return it.t+"|"+it.k;}
+function isOn(it){return it.on!==false;}
 function renderTags(){
   $("tags").innerHTML=state.items.map(function(it,i){
-    return '<span class="tag'+(it.on===false?" dim":"")+'" data-tog="'+i+'">'+tagIcon(it)+'<b>'+labelOf(it)+'</b><button type="button" data-i="'+i+'">×</button></span>';
+    return '<span class="tag'+(isOn(it)?"":" dim")+'" data-tog="'+i+'">'+tagIcon(it)+'<b>'+labelOf(it)+'</b><button class="x" type="button" data-del="'+i+'">×</button></span>';
   }).join("");
 }
 function findMtr(q){
@@ -361,14 +366,18 @@ bindLiveSearch("locQ");
 bindLiveSearch("gateQ");
 $("suggest").addEventListener("click",function(e){var li=e.target.closest("li"); if(li) addItem(li.getAttribute("data-t"),li.getAttribute("data-k"));});
 $("tags").addEventListener("click",function(e){
-  var del=e.target.closest("[data-i]");
-  if(del && $("tags").contains(del)){
-    var x=+del.getAttribute("data-i");
+  var del=e.target.closest("[data-del]");
+  if(del){
+    e.preventDefault(); e.stopPropagation();
+    var x=+del.getAttribute("data-del");
+    if(isNaN(x)) return;
     state.items.splice(x,1); persist(); renderTags(); refresh(); return;
   }
   var t=e.target.closest("[data-tog]"); if(!t) return;
+  e.preventDefault();
   var it=state.items[+t.getAttribute("data-tog")]; if(!it) return;
-  it.on=!(it.on!==false); persist(); renderTags(); paint();
+  it.on=isOn(it)?false:true;
+  persist(); renderTags(); paint();
 });
 function pickNearby(list){
   var byBound={}, out=[];
@@ -574,7 +583,7 @@ function kmbNearby(route){
           var stop=state.kmbStops[rs.stop]; if(!stop) return;
           var d=dist(state.loc.lat,state.loc.lng,Number(stop.lat),Number(stop.long));
           var key=rs.stop+"-"+p.v.bound; if(seen[key]) return; seen[key]=1;
-          path.push({lat:Number(stop.lat),lng:Number(stop.long)});
+          path.push({lat:Number(stop.lat),lng:Number(stop.long),name:stop.name_tc||stop.name_en||""});
           all.push({kind:"bus",co:"KMB",coName:"九巴／龍運",route:route,stopId:rs.stop,name:stop.name_tc,nameEn:stop.name_en,lat:Number(stop.lat),lng:Number(stop.long),path:path.slice(-14),dist:Math.round(d),bound:p.v.bound,serviceType:String(p.v.service_type||"1"),dest:p.v.dest_tc||""});
         });
       });
@@ -603,7 +612,7 @@ function ctbNearby(route){
             var stop=ctbStopCache[rs.stop]; if(!stop||!stop.lat) return;
             var d=dist(state.loc.lat,state.loc.lng,Number(stop.lat),Number(stop.long));
             var key=rs.stop+"-"+bound; if(seen[key]) return; seen[key]=1;
-            path.push({lat:Number(stop.lat),lng:Number(stop.long)});
+            path.push({lat:Number(stop.lat),lng:Number(stop.long),name:stop.name_tc||stop.name_en||""});
             out.push({kind:"bus",co:"CTB",coName:"城巴",route:route,stopId:rs.stop,name:stop.name_tc||stop.name_en,nameEn:stop.name_en,lat:Number(stop.lat),lng:Number(stop.long),path:path.slice(-14),dist:Math.round(d),bound:bound,serviceType:"1",dest:bound==="O"?(meta.dest_tc||meta.orig_tc||""):(meta.orig_tc||meta.dest_tc||"")});
           });
         });
@@ -662,15 +671,15 @@ function slot(row,i){
   return '<div class="slot '+klass+'"><div class="lab">第 '+i+' 班</div><div class="big">'+big+'</div><div class="clk">'+(row.eta?clock(row.eta):"—")+'</div></div>';
 }
 function paint(){
-  var on=state.items.filter(function(it){return it.on!==false;});
+  var on=state.items.filter(isOn);
   var cards=state.cards.filter(function(c){
     if(state.tab==="kmb" && !(c.kind==="bus" && c.co==="KMB")) return false;
     if(state.tab==="ctb" && !(c.kind==="bus" && c.co==="CTB")) return false;
     if(state.tab==="mtr" && c.kind!=="mtr") return false;
+    if(!state.items.length) return true;
     if(!on.length) return false;
-    if(on.length===state.items.length) return true;
     return on.some(function(it){
-      if(it.t==="bus") return c.kind==="bus" && String(c.route)===String(it.k);
+      if(it.t==="bus") return c.kind==="bus" && String(c.route).toUpperCase()===String(it.k).toUpperCase();
       return c.kind==="mtr" && (c.stopId===it.k || c.name===labelOf(it));
     });
   });
@@ -728,6 +737,19 @@ function alongPath(path,t){
   }
   return path[path.length-1];
 }
+function nearHint(path,pos,stopName){
+  if(!path||!path.length||!pos) return "估算行駛中";
+  var best=path[0], bd=1e9, idx=0;
+  path.forEach(function(p,i){
+    var d=dist(pos.lat,pos.lng,p.lat,p.lng);
+    if(d<bd){bd=d;best=p;idx=i;}
+  });
+  var left=Math.max(0,path.length-1-idx);
+  var nm=best.name||stopName||"";
+  if(left<=0) return "接近本站"+(nm?" · "+nm:"");
+  if(!nm) return "估算行駛中 · 尚餘 "+left+" 站";
+  return "約在 <b>"+nm+"</b> 附近 · 尚餘 "+left+" 站";
+}
 function etaProgress(c){
   var m=999;
   if(c.etas&&c.etas[0]){
@@ -756,6 +778,10 @@ function mountCardMaps(cards){
     var hd=headingAt(path,prog);
     var vhtml='<div class="veh" style="transform:rotate('+hd+'deg)">'+busTop()+'</div>';
     var veh=L.marker([pos.lat,pos.lng],{icon:L.divIcon({className:"",html:vhtml,iconSize:[28,16],iconAnchor:[14,8]})}).addTo(map);
+    var pin=document.createElement("div");
+    pin.className="herepin";
+    pin.innerHTML=nearHint(path,pos,c.name);
+    el.appendChild(pin);
     map.setView([pos.lat,pos.lng],16);
     setTimeout(function(){map.invalidateSize();},120);
     miniMaps.push(map);
