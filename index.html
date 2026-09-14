@@ -895,7 +895,7 @@ function mountCardMaps(cards){
   miniMaps.forEach(function(m){ try{m.remove();}catch(e){} });
   miniMaps=[];
   if(!window.L) return;
-  cards.slice(0,6).forEach(function(c,i){
+  cards.forEach(function(c,i){
     if(!c.lat||!c.lng) return;
     var el=$("map"+i); if(!el) return;
     var map=L.map(el,{zoomControl:false,attributionControl:false,dragging:true,scrollWheelZoom:false});
