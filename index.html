@@ -324,11 +324,12 @@ $("homeBtn").onclick=function(){
 };
 function geoError(err){
   var code=err&&err.code;
-  var text="定位失敗。";
-  if(code===1) text="定位被拒絕。iPhone：設定 → Safari → 位置 → 允許。";
-  else if(code===2) text="暫時讀唔到位置，可改用常用位置。";
-  else if(code===3) text="定位逾時。請行出空曠少少或再用常用位置。";
+  var text="定位失敗，可改用常用位置。";
+  if(code===1) text="此網站定位仍被拒絕。Safari 網址列撳 aA 或 ⋯ → 網站設定 → 位置 → 允許，然後重新整理。並確認：設定 → 私隱與保安 → 定位服務 → 開啟，Safari 網站 = 使用 App 期間。";
+  else if(code===2) text="暫時讀唔到 GPS，可改用常用位置。";
+  else if(code===3) text="定位逾時。行去窗邊或室外再試，或用常用位置。";
   say(text);
+  toast(code===1?"要允許「morriscsy.github.io」呢個網站用位置":text,true);
 }
 function nameFromCoords(lat,lng,done){
   var nearest=null, nd=1e9;
