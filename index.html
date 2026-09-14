@@ -361,11 +361,14 @@ bindLiveSearch("locQ");
 bindLiveSearch("gateQ");
 $("suggest").addEventListener("click",function(e){var li=e.target.closest("li"); if(li) addItem(li.getAttribute("data-t"),li.getAttribute("data-k"));});
 $("tags").addEventListener("click",function(e){
-  var x=e.target.getAttribute("data-i");
-  if(x!=null){ state.items.splice(+x,1); persist(); renderTags(); refresh(); return; }
+  var del=e.target.closest("[data-i]");
+  if(del && $("tags").contains(del)){
+    var x=+del.getAttribute("data-i");
+    state.items.splice(x,1); persist(); renderTags(); refresh(); return;
+  }
   var t=e.target.closest("[data-tog]"); if(!t) return;
   var it=state.items[+t.getAttribute("data-tog")]; if(!it) return;
-  it.on=it.on===false; persist(); renderTags(); paint();
+  it.on=!(it.on!==false); persist(); renderTags(); paint();
 });
 function pickNearby(list){
   var byBound={}, out=[];
@@ -661,16 +664,15 @@ function slot(row,i){
 function paint(){
   var on=state.items.filter(function(it){return it.on!==false;});
   var cards=state.cards.filter(function(c){
-    if(state.tab==="kmb") return c.kind==="bus" && c.co==="KMB";
-    if(state.tab==="ctb") return c.kind==="bus" && c.co==="CTB";
-    if(state.tab==="mtr") return c.kind==="mtr";
-    if(on.length && on.length<state.items.length){
-      return on.some(function(it){
-        if(it.t==="bus") return c.kind==="bus" && String(c.route)===String(it.k);
-        return c.kind==="mtr" && (c.stopId===it.k || c.name===labelOf(it));
-      });
-    }
-    return true;
+    if(state.tab==="kmb" && !(c.kind==="bus" && c.co==="KMB")) return false;
+    if(state.tab==="ctb" && !(c.kind==="bus" && c.co==="CTB")) return false;
+    if(state.tab==="mtr" && c.kind!=="mtr") return false;
+    if(!on.length) return false;
+    if(on.length===state.items.length) return true;
+    return on.some(function(it){
+      if(it.t==="bus") return c.kind==="bus" && String(c.route)===String(it.k);
+      return c.kind==="mtr" && (c.stopId===it.k || c.name===labelOf(it));
+    });
   });
   if(!state.items.length){
     $("feed").innerHTML='<div class="card">加入巴士路線或港鐵站後，會顯示附近到站。可用分頁篩選九巴／城巴／港鐵。</div>';
