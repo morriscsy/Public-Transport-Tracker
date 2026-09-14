@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#07080c">
+<title>近站到站</title>
+<style>
+*{box-sizing:border-box}
+html,body{margin:0;background:#07080c;color:#f7f4ee;font-family:-apple-system,BlinkMacSystemFont,"PingFang HK","Noto Sans TC",sans-serif}
+.app{max-width:430px;margin:0 auto;padding:calc(18px + env(safe-area-inset-top)) 16px 32px}
+.kicker{margin:0;color:#f0c36a;letter-spacing:.14em;font-size:10px;text-transform:uppercase}
+h1{margin:6px 0 4px;font-size:34px;letter-spacing:-.04em}
+.sub{margin:0 0 14px;color:#9a958b;font-size:13px}
+.row{display:flex;gap:8px;margin-bottom:12px}
+.ghost{border:1px solid rgba(255,255,255,.1);background:#14161d;color:#f7f4ee;border-radius:999px;padding:8px 12px;font-size:12px}
+.ghost.on{color:#f0c36a;border-color:rgba(240,195,106,.5)}
+.search{display:flex;gap:8px;background:#12141b;border:1px solid rgba(255,255,255,.1);border-radius:16px;padding:6px}
+.search input{flex:1;border:0;outline:0;background:transparent;color:#fff;font-size:16px;padding:10px 8px}
+.search button{border:0;background:#ff4d3a;color:#fff;border-radius:12px;padding:0 16px;font-weight:700}
+.quick{display:flex;gap:8px;overflow:auto;margin:12px 0}
+.quick button{border:1px solid rgba(255,255,255,.1);background:transparent;color:#fff;border-radius:999px;padding:8px 12px;white-space:nowrap}
+.tags{display:flex;flex-wrap:wrap;gap:8px}
+.tag{background:#1a1d27;border-radius:999px;padding:7px 8px 7px 12px}
+.tag b{color:#f0c36a}
+.tag button{border:0;background:transparent;color:#9a958b}
+.msg{color:#9a958b;font-size:13px;min-height:18px}
+.card{background:#14171f;border:1px solid rgba(255,255,255,.1);border-radius:20px;padding:16px;margin:12px 0}
+.bus{font-size:40px;font-weight:720;line-height:.9}
+.badge{color:#f0c36a;font-size:11px}
+.to{float:right;text-align:right;color:#9a958b;font-size:13px}
+.stop{margin-top:12px}
+.dist{color:#9a958b;font-size:12px}
+.times{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:14px}
+.slot{background:rgba(255,255,255,.04);border-radius:14px;padding:10px 6px;text-align:center}
+.lab{font-size:10px;color:#9a958b}
+.big{font-size:20px;font-weight:750;margin:6px 0 2px}
+.soon .big{color:#7dffc2}
+.wait .big{color:#f0c36a}
+.empty .big{color:#6b665e;font-size:14px}
+.clk{font-size:11px;color:#9a958b}
+.fine{color:#5d594f;font-size:11px;margin-top:16px}
+</style>
+</head>
+<body>
+<div class="app">
+<p class="kicker">Live nearby</p>
+<h1>近站到站</h1>
+<p class="sub" id="locLine">示範位置 · 麗晶花園13座</p>
+<div class="row">
+<button class="ghost" id="gpsBtn" type="button">開啟定位</button>
+<button class="ghost on" id="demoBtn" type="button">示範位置</button>
+</div>
+<form id="searchForm" class="search" action="#">
+<input id="q" type="text" placeholder="輸入路線，例如 N293">
+<button type="submit">加入</button>
+</form>
+<div class="quick">
+<button type="button" id="bN293">N293</button>
+<button type="button" id="bN121">N121</button>
+<button type="button" id="bN796">N796</button>
+<button type="button" id="bN216">N216</button>
+<button type="button" id="b1A">1A</button>
+</div>
+<div class="tags" id="tags"></div>
+<p class="msg" id="msg">撳 N293 或輸入後按加入。</p>
+<div id="feed"></div>
+<p class="fine">約 500 米內車站 · 九巴／龍運／城巴公開資料</p>
+</div>
+<script>
+(function(){
+var KMB="https://data.etabus.gov.hk/v1/transport/kmb";
+var CTB="https://rt.data.gov.hk/v2/transport/citybus";
+var DEMO={lat:22.330688,lng:114.206918};
+var MIN_M=0, MAX_M=500;
+var state={loc:{lat:DEMO.lat,lng:DEMO.lng},mode:"demo",routes:[],kmbStops:{},kmbRoutes:{},ctbRoutes:{},busy:false};
+try{state.routes=JSON.parse(localStorage.getItem("watchRoutes")||"[]");}catch(e){}
+function $(id){return document.getElementById(id);}
+function say(t){$("msg").textContent=t;}
+function norm(s){return String(s||"").trim().toUpperCase().replace(/\s+/g,"");}
+function dist(a,b,c,d){
+  var R=6371000,p1=a*Math.PI/180,p2=c*Math.PI/180,dphi=(c-a)*Math.PI/180,dl=(d-b)*Math.PI/180;
+  var x=Math.sin(dphi/2)*Math.sin(dphi/2)+Math.cos(p1)*Math.cos(p2)*Math.sin(dl/2)*Math.sin(dl/2);
+  return 2*R*Math.asin(Math.sqrt(x));
+}
+function getJson(url){
+  return fetch(url).then(function(r){
+    if(!r.ok) throw new Error(r.status+" "+url);
+    return r.json();
+  });
+}
+function clock(iso){
+  return new Date(iso).toLocaleTimeString("zh-HK",{hour:"2-digit",minute:"2-digit",hour12:false});
+}
+function mins(iso){
+  var m=Math.round((new Date(iso)-Date.now())/60000);
+  return m<=0?"即將到":(m+"分");
+}
+function persist(){try{localStorage.setItem("watchRoutes",JSON.stringify(state.routes));}catch(e){}}
+function renderTags(){
+  $("tags").innerHTML=state.routes.map(function(r){
+    return '<span class="tag"><b>'+r+'</b> <button type="button" data-del="'+r+'">×</button></span>';
+  }).join("");
+}
+function addRoute(raw){
+  var route=norm(raw);
+  if(!route){say("請輸入路線，例如 N293");return;}
+  $("q").value="";
+  if(state.routes.indexOf(route)<0) state.routes.push(route);
+  persist(); renderTags();
+  say("已加入 "+route+"，正在查附近班次…");
+  refresh();
+}
+function removeRoute(r){
+  state.routes=state.routes.filter(function(x){return x!==r;});
+  persist(); renderTags(); refresh();
+}
+$("searchForm").addEventListener("submit",function(e){e.preventDefault();addRoute($("q").value);});
+["N293","N121","N796","N216","1A"].forEach(function(r){
+  var el=$("b"+r); if(el) el.onclick=function(){addRoute(r);};
+});
+$("tags").addEventListener("click",function(e){
+  var t=e.target.getAttribute("data-del"); if(t) removeRoute(t);
+});
+$("demoBtn").onclick=function(){
+  state.loc={lat:DEMO.lat,lng:DEMO.lng}; state.mode="demo";
+  $("demoBtn").classList.add("on"); $("gpsBtn").classList.remove("on");
+  $("locLine").textContent="示範位置 · 麗晶花園13座";
+  refresh();
+};
+$("gpsBtn").onclick=function(){
+  if(!navigator.geolocation){say("此瀏覽器不支援定位");return;}
+  say("正在要求定位…");
+  navigator.geolocation.getCurrentPosition(function(pos){
+    state.loc={lat:pos.coords.latitude,lng:pos.coords.longitude};
+    state.mode="gps";
+    $("gpsBtn").classList.add("on"); $("demoBtn").classList.remove("on");
+    $("locLine").textContent="實時位置已開啟";
+    refresh();
+  },function(){say("定位失敗，可用示範位置");});
+};
+function loadCatalog(){
+  say("正在載入路線資料…");
+  return Promise.all([
+    getJson(KMB+"/route"),
+    getJson(KMB+"/stop"),
+    getJson(CTB+"/route/ctb").catch(function(){return {data:[]};})
+  ]).then(function(arr){
+    (arr[1].data||[]).forEach(function(s){state.kmbStops[s.stop]=s;});
+    (arr[0].data||[]).forEach(function(r){
+      var k=String(r.route).toUpperCase();
+      if(!state.kmbRoutes[k]) state.kmbRoutes[k]=[];
+      state.kmbRoutes[k].push(r);
+    });
+    (arr[2].data||[]).forEach(function(r){state.ctbRoutes[String(r.route).toUpperCase()]=r;});
+    say("資料已載入。撳 N293 開始。");
+  }).catch(function(e){say("目錄載入失敗，仍可直接加入路線。");});
+}
+function getKmbStop(id){
+  if(state.kmbStops[id]) return Promise.resolve(state.kmbStops[id]);
+  return getJson(KMB+"/stop/"+id).then(function(j){
+    if(j.data) state.kmbStops[id]=j.data;
+    return j.data||null;
+  }).catch(function(){return null;});
+}
+function kmbNearby(route){
+  var variants=state.kmbRoutes[route]||[{bound:"O",service_type:"1"},{bound:"I",service_type:"1"}];
+  var tasks=variants.map(function(v){
+    var dir=v.bound==="I"?"inbound":"outbound";
+    var stype=v.service_type||"1";
+    return getJson(KMB+"/route-stop/"+route+"/"+dir+"/"+stype).then(function(j){
+      return {v:v,rows:j.data||[]};
+    }).catch(function(){return {v:v,rows:[]};});
+  });
+  return Promise.all(tasks).then(function(parts){
+    var ids=[];
+    parts.forEach(function(p){p.rows.forEach(function(rs){if(ids.indexOf(rs.stop)<0) ids.push(rs.stop);});});
+    return Promise.all(ids.map(getKmbStop)).then(function(){
+      var all=[], seen={};
+      parts.forEach(function(p){
+        p.rows.forEach(function(rs){
+          var stop=state.kmbStops[rs.stop];
+          if(!stop) return;
+          var d=dist(state.loc.lat,state.loc.lng,Number(stop.lat),Number(stop.long));
+          var key=rs.stop+"-"+p.v.bound;
+          if(seen[key]) return; seen[key]=1;
+          all.push({co:"KMB",coName:"九巴／龍運",route:route,stopId:rs.stop,name:stop.name_tc,nameEn:stop.name_en,dist:Math.round(d),bound:p.v.bound,serviceType:String(p.v.service_type||"1"),dest:p.v.dest_tc||""});
+        });
+      });
+      all.sort(function(a,b){return a.dist-b.dist;});
+      var inRange=all.filter(function(x){return x.dist>=MIN_M && x.dist<=MAX_M;});
+      return inRange.length?inRange:all.slice(0,2);
+    });
+  });
+}
+function ctbNearby(route){
+  if(!state.ctbRoutes[route]) return Promise.resolve([]);
+  var meta=state.ctbRoutes[route];
+  var dirs=["outbound","inbound"];
+  return Promise.all(dirs.map(function(dir){
+    return getJson(CTB+"/route-stop/CTB/"+route+"/"+dir).then(function(j){return {dir:dir,rows:j.data||[]};}).catch(function(){return {dir:dir,rows:[]};});
+  })).then(function(parts){
+    var stopIds=[];
+    parts.forEach(function(p){p.rows.forEach(function(rs){if(stopIds.indexOf(rs.stop)<0) stopIds.push(rs.stop);});});
+    return Promise.all(stopIds.map(function(id){
+      return getJson(CTB+"/stop/"+id).then(function(j){return [id,j.data];}).catch(function(){return [id,null];});
+    })).then(function(pairs){
+      var map={}; pairs.forEach(function(p){map[p[0]]=p[1];});
+      var out=[],seen={};
+      parts.forEach(function(p){
+        var bound=p.dir==="inbound"?"I":"O";
+        p.rows.forEach(function(rs){
+          var stop=map[rs.stop]; if(!stop||!stop.lat) return;
+          var d=dist(state.loc.lat,state.loc.lng,Number(stop.lat),Number(stop.long));
+          if(d<MIN_M||d>MAX_M) return;
+          var key=rs.stop+"-"+bound; if(seen[key]) return; seen[key]=1;
+          out.push({co:"CTB",coName:"城巴",route:route,stopId:rs.stop,name:stop.name_tc,nameEn:stop.name_en,dist:Math.round(d),bound:bound,serviceType:"1",dest:bound==="O"?meta.dest_tc:meta.orig_tc});
+        });
+      });
+      return out;
+    });
+  });
+}
+function etas(item){
+  var url=item.co==="KMB"
+    ? KMB+"/eta/"+item.stopId+"/"+item.route+"/"+item.serviceType
+    : CTB+"/eta/CTB/"+item.stopId+"/"+item.route;
+  return getJson(url).then(function(j){
+    return (j.data||[]).filter(function(x){return !item.bound||!x.dir||x.dir===item.bound;})
+      .filter(function(x){return x.eta && new Date(x.eta)>Date.now()-20000;})
+      .sort(function(a,b){return new Date(a.eta)-new Date(b.eta);})
+      .slice(0,3)
+      .map(function(x){return {eta:x.eta,dest:x.dest_tc,rmk:x.rmk_tc};});
+  }).catch(function(){return [];});
+}
+function slot(row,i){
+  if(!row||!row.eta) return '<div class="slot empty"><div class="lab">第 '+i+' 班</div><div class="big">暫無</div><div class="clk">—</div></div>';
+  var m=Math.round((new Date(row.eta)-Date.now())/60000);
+  var klass=m<=5?"soon":"wait";
+  return '<div class="slot '+klass+'"><div class="lab">第 '+i+' 班</div><div class="big">'+mins(row.eta)+'</div><div class="clk">'+clock(row.eta)+(row.rmk?(" · "+row.rmk):"")+'</div></div>';
+}
+function refresh(){
+  if(state.busy) return;
+  state.busy=true;
+  renderTags();
+  if(!state.routes.length){$("feed").innerHTML="";state.busy=false;return;}
+  var jobs=state.routes.map(function(route){
+    return Promise.all([kmbNearby(route),ctbNearby(route)]).then(function(arr){
+      var nearby=arr[0].concat(arr[1]).sort(function(a,b){return a.dist-b.dist;});
+      var used={},picked=[];
+      nearby.forEach(function(item){
+        var k=item.co+"-"+item.bound;
+        if(used[k]) return; used[k]=1; picked.push(item);
+      });
+      return Promise.all(picked.map(function(item){
+        return etas(item).then(function(e){item.etas=e;return item;});
+      }));
+    });
+  });
+  Promise.all(jobs).then(function(groups){
+    var cards=[].concat.apply([],groups);
+    if(!cards.length){
+      $("feed").innerHTML='<div class="card">已加入 '+state.routes.join("、")+'，但 100–350 米內沒有車站。</div>';
+      say("附近範圍沒有車站");
+    }else{
+      $("feed").innerHTML=cards.map(function(c){
+        var dest=(c.etas[0]&&c.etas[0].dest)||c.dest||"—";
+        return '<article class="card"><div class="to">往<br><b style="color:#fff">'+dest+'</b></div><div class="badge">'+c.coName+'</div><div class="bus">'+c.route+'</div><div class="stop">'+c.name+'</div><div class="dist">'+c.dist+' 米 · '+(c.nameEn||"")+'</div><div class="times">'+[0,1,2].map(function(i){return slot(c.etas[i],i+1);}).join("")+'</div></article>';
+      }).join("");
+      say("已更新 "+new Date().toLocaleTimeString("zh-HK",{hour12:false}));
+    }
+  }).catch(function(e){
+    say("查詢失敗。請用 Safari 開啟，不要用檔案預覽。");
+    $("feed").innerHTML='<div class="card">網絡被擋或未用 Safari 開啟。</div>';
+  }).then(function(){state.busy=false;});
+}
+renderTags();
+loadCatalog().then(function(){if(state.routes.length) refresh();});
+setInterval(function(){if(state.routes.length) refresh();},30000);
+})();
+</script>
+</body>
+</html>
