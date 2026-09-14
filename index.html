@@ -787,9 +787,34 @@ function slot(row,i){
   var note=row.sched?"原定班次":(row.rmk||"");
   return '<div class="slot '+klass+'"><div class="lab">第 '+i+' 班</div><div class="big">'+big+'</div><div class="clk">'+(row.eta?clock(row.eta):"—")+'</div></div>';
 }
+function routeKey(s){
+  s=String(s||"").toUpperCase();
+  var m=s.match(/^([A-Z]*)(\d+)([A-Z]*)$/);
+  if(!m) return [1,s,0,""];
+  return [0,m[1],Number(m[2]),m[3]];
+}
+function destOf(c){
+  return String((c.etas&&c.etas[0]&&c.etas[0].dest)||c.dest||"");
+}
+function firstEta(c){
+  var m=c.etas&&c.etas[0]?etaMins(c.etas[0]):null;
+  return m==null?9999:m;
+}
+function sortCards(list){
+  return list.slice().sort(function(a,b){
+    if(a.kind!==b.kind) return a.kind==="bus"?-1:1;
+    var ra=routeKey(a.kind==="bus"?a.route:a.name), rb=routeKey(b.kind==="bus"?b.route:b.name);
+    for(var i=0;i<ra.length;i++){ if(ra[i]<rb[i]) return -1; if(ra[i]>rb[i]) return 1; }
+    var da=destOf(a), db=destOf(b);
+    if(da!==db) return da.localeCompare(db,"zh-Hant");
+    var sa=String(a.name||""), sb=String(b.name||"");
+    if(sa!==sb) return sa.localeCompare(sb,"zh-Hant");
+    return firstEta(a)-firstEta(b);
+  });
+}
 function paint(){
   var on=state.items.filter(isOn);
-  var cards=state.cards.filter(function(c){
+  var cards=sortCards(state.cards.filter(function(c){
     if(state.tab==="kmb" && !(c.kind==="bus" && c.co==="KMB")) return false;
     if(state.tab==="ctb" && !(c.kind==="bus" && c.co==="CTB")) return false;
     if(state.tab==="mtr" && c.kind!=="mtr") return false;
@@ -799,7 +824,7 @@ function paint(){
       if(it.t==="bus") return c.kind==="bus" && String(c.route).toUpperCase()===String(it.k).toUpperCase();
       return c.kind==="mtr" && (c.stopId===it.k || c.name===labelOf(it));
     });
-  });
+  }));
   if(!state.items.length){
     $("feed").innerHTML='<div class="card">加入巴士路線或港鐵站後，會顯示附近到站。可用分頁篩選九巴／城巴／港鐵。</div>';
     return;
