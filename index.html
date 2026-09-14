@@ -96,6 +96,37 @@ h1{margin:2px 0 0;font-size:30px;letter-spacing:-.04em}
 .gatebox p{margin:0 0 14px;color:#c5bfb4;font-size:14px;line-height:1.45}
 .gatebox .locbox{margin-bottom:10px}
 .gbtn{width:100%;border:0;border-radius:14px;padding:14px;font-size:16px;font-weight:700;background:#ff4d3a;color:#fff;margin-top:8px}
+#feed{display:flex;flex-direction:column}
+.topbar .row{margin-bottom:10px}
+@media (min-width:740px){
+  .app{max-width:1100px;padding:16px 24px 40px}
+  .brand{margin-bottom:6px}
+  .topbar{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;margin-bottom:10px}
+  .topbar .sub{margin:0 8px 0 0;flex:0 1 auto}
+  .topbar .row{margin:0}
+  .topbar .search{flex:0 1 360px;max-width:360px;margin:0}
+  .topbar #tags,.topbar .tabs{margin:0}
+  .topbar .msg{min-height:0;margin:0 0 0 auto;font-size:11px}
+  .topbar .panel{flex:1 1 100%}
+  #feed{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;align-items:start}
+  .card{margin:0;height:100%}
+  .cardmap{height:150px}
+  .times.mini{max-width:260px}
+}
+@media (min-width:1180px){
+  .app{max-width:1440px;padding:22px 28px 56px}
+  #feed{grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
+  .cardmap{height:140px}
+}
+@media (min-width:740px) and (max-height:820px){
+  .cardmap{height:120px}
+  .times.mini .big{font-size:18px}
+}
+@media (max-width:739px) and (orientation:landscape){
+  .app{max-width:100%;padding:10px 12px 24px}
+  #feed{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+  .cardmap{height:110px}
+}
 </style>
 </head>
 <body>
@@ -136,6 +167,7 @@ h1{margin:2px 0 0;font-size:30px;letter-spacing:-.04em}
     <div class="now-date" id="nowDate">—</div>
   </div>
 </div>
+<div class="topbar">
 <p class="sub" id="locLine">未設定常用位置</p>
 <div class="row">
 <button class="ghost" id="gpsBtn" type="button">開啟定位</button>
@@ -158,11 +190,13 @@ h1{margin:2px 0 0;font-size:30px;letter-spacing:-.04em}
 <ul id="suggest"></ul>
 <div id="tags"></div>
 <div class="tabs" id="tabs">
-<button type="button" class="on" data-tab="all">全部</button>
-<button type="button" data-tab="bus">巴士</button>
+<button type="button" data-tab="kmb">九巴</button>
+<button type="button" data-tab="ctb">城巴</button>
 <button type="button" data-tab="mtr">港鐵</button>
+<button type="button" class="on" data-tab="all">全部</button>
 </div>
 <p class="msg" id="msg">搜尋路線或港鐵站，最近項目會留低。</p>
+</div>
 <div id="feed"></div>
 <p class="fine">九巴／龍運／城巴／港鐵公開資料 · 「原定班次」= 時間表，並非 GPS 實時車</p>
 </div>
@@ -627,8 +661,9 @@ function slot(row,i){
 function paint(){
   var on=state.items.filter(function(it){return it.on!==false;});
   var cards=state.cards.filter(function(c){
-    if(state.tab==="bus" && c.kind!=="bus") return false;
-    if(state.tab==="mtr" && c.kind!=="mtr") return false;
+    if(state.tab==="kmb") return c.kind==="bus" && c.co==="KMB";
+    if(state.tab==="ctb") return c.kind==="bus" && c.co==="CTB";
+    if(state.tab==="mtr") return c.kind==="mtr";
     if(on.length && on.length<state.items.length){
       return on.some(function(it){
         if(it.t==="bus") return c.kind==="bus" && String(c.route)===String(it.k);
@@ -638,7 +673,7 @@ function paint(){
     return true;
   });
   if(!state.items.length){
-    $("feed").innerHTML='<div class="card">加入巴士路線或港鐵站後，會顯示附近到站。可用分頁篩選巴士／港鐵。</div>';
+    $("feed").innerHTML='<div class="card">加入巴士路線或港鐵站後，會顯示附近到站。可用分頁篩選九巴／城巴／港鐵。</div>';
     return;
   }
   if(!cards.length){
@@ -755,13 +790,10 @@ function refresh(){
     }
     var uniq={}, slim=[];
     cards.forEach(function(c){
-      var k=c.kind==="mtr"?("mtr-"+c.stopId+"-"+c.route+"-"+destKey(c)):(c.route+"-"+destKey(c));
+      var k=c.kind==="mtr"?("mtr-"+c.stopId+"-"+c.route+"-"+destKey(c)):(c.co+"-"+c.route+"-"+c.bound+"-"+destKey(c));
       var old=uniq[k];
       if(!old){ uniq[k]=c; slim.push(c); return; }
-      var names=(old.coName||"")+"／"+(c.coName||"");
-      var seen={}; old.coName=names.split("／").filter(function(n){if(!n||seen[n])return 0;seen[n]=1;return 1;}).join("／");
       if(liveScore(c)<liveScore(old) || (liveScore(c)===liveScore(old) && c.dist<old.dist)){
-        c.coName=old.coName;
         slim[slim.indexOf(old)]=c; uniq[k]=c;
       }
     });
