@@ -5,86 +5,184 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#07080c">
-<title>近站到站</title>
+<title>刻到 HAKDOU</title>
+<meta name="apple-mobile-web-app-title" content="刻到">
 <style>
 *{box-sizing:border-box}
 html,body{margin:0;background:#07080c;color:#f7f4ee;font-family:-apple-system,BlinkMacSystemFont,"PingFang HK","Noto Sans TC",sans-serif}
-.app{max-width:430px;margin:0 auto;padding:calc(18px + env(safe-area-inset-top)) 16px 32px}
-.kicker{margin:0;color:#f0c36a;letter-spacing:.14em;font-size:10px;text-transform:uppercase}
-h1{margin:6px 0 4px;font-size:34px;letter-spacing:-.04em}
-.sub{margin:0 0 14px;color:#9a958b;font-size:13px}
-.row{display:flex;gap:8px;margin-bottom:12px}
-.ghost{border:1px solid rgba(255,255,255,.1);background:#14161d;color:#f7f4ee;border-radius:999px;padding:8px 12px;font-size:12px}
-.ghost.on{color:#f0c36a;border-color:rgba(240,195,106,.5)}
-.search{display:flex;gap:8px;background:#12141b;border:1px solid rgba(255,255,255,.1);border-radius:16px;padding:6px}
-.search input{flex:1;border:0;outline:0;background:transparent;color:#fff;font-size:16px;padding:10px 8px}
-.search button{border:0;background:#ff4d3a;color:#fff;border-radius:12px;padding:0 16px;font-weight:700}
-.quick{display:flex;gap:8px;overflow:auto;margin:12px 0;min-height:8px}
-.quick button{border:1px solid rgba(255,255,255,.1);background:transparent;color:#fff;border-radius:999px;padding:8px 12px;white-space:nowrap}
-.quick .mtr{border-color:rgba(125,255,194,.25);color:#7dffc2}
-.tags{display:flex;flex-wrap:wrap;gap:8px}
-.tag{background:#1a1d27;border-radius:999px;padding:7px 8px 7px 12px}
-.tag b{color:#f0c36a}
-.tag.mtr b{color:#7dffc2}
+.app{max-width:430px;margin:0 auto;padding:calc(16px + env(safe-area-inset-top)) 14px 40px}
+.brand{display:flex;align-items:center;gap:12px;margin-bottom:8px}
+.logo3d{width:56px;height:56px;perspective:240px;flex:0 0 56px}
+.logo-spin{width:56px;height:56px;transform-style:preserve-3d;animation:float3d 5.5s ease-in-out infinite}
+.logo-spin svg{width:56px;height:56px;filter:drop-shadow(0 10px 14px rgba(255,77,58,.28))}
+@keyframes float3d{
+  0%{transform:rotateY(-18deg) rotateX(12deg) translateY(0)}
+  50%{transform:rotateY(18deg) rotateX(6deg) translateY(-5px)}
+  100%{transform:rotateY(-18deg) rotateX(12deg) translateY(0)}
+}
+.kicker{margin:0;color:#f0c36a;letter-spacing:.16em;font-size:10px}
+h1{margin:2px 0 0;font-size:30px;letter-spacing:-.04em}
+.nowbox{margin-left:auto;text-align:right}
+.now-time{font-size:22px;font-weight:750;letter-spacing:-.03em;line-height:1;font-variant-numeric:tabular-nums}
+.now-date{margin-top:3px;color:#9a958b;font-size:11px}
+.sub{margin:0 0 10px;color:#9a958b;font-size:12px}
+.row{display:flex;gap:8px;margin-bottom:10px}
+.ghost{border:1px solid rgba(255,255,255,.12);background:#14161d;color:#f7f4ee;border-radius:999px;padding:8px 12px;font-size:12px}
+.ghost.on{color:#f0c36a;border-color:rgba(240,195,106,.55)}
+.search,.locbox{display:flex;gap:8px;background:#12141b;border:1px solid rgba(255,255,255,.1);border-radius:16px;padding:6px}
+.search{position:relative}
+.search input,.locbox input{flex:1;border:0;outline:0;background:transparent;color:#fff;font-size:16px;padding:10px 8px;min-width:0}
+.ph-track{position:absolute;left:14px;right:78px;top:50%;transform:translateY(-50%);overflow:hidden;pointer-events:none;height:18px}
+.ph-track.off{display:none}
+.ph-move{display:inline-block;white-space:nowrap;color:#7a756b;font-size:14px;animation:marq 14s linear infinite}
+@keyframes marq{0%{transform:translateX(12%)}100%{transform:translateX(-70%)}}
+.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(20px);background:#2a1a12;color:#ffd7a8;border:1px solid #c45a12;border-radius:14px;padding:12px 16px;font-size:14px;max-width:86vw;z-index:20;opacity:0;pointer-events:none;transition:.2s}
+.toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
+.search button,.locbox button{border:0;background:#ff4d3a;color:#fff;border-radius:12px;padding:0 14px;font-weight:700}
+.panel{display:none;background:#12141b;border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:10px;margin-bottom:10px}
+.panel.on{display:block}
+.quick,.tabs{display:flex;gap:8px;overflow:auto;margin:10px 0;padding-bottom:2px}
+.quick button,.tabs button{border:1px solid rgba(255,255,255,.1);background:transparent;color:#fff;border-radius:999px;padding:7px 12px;white-space:nowrap;font-size:13px}
+.tabs button.on{background:#1e2330;color:#f0c36a;border-color:rgba(240,195,106,.4)}
+.tag{background:#1a1d27;border-radius:999px;padding:6px 8px 6px 10px;display:inline-flex;align-items:center;gap:6px;margin:0 6px 6px 0}
 .tag button{border:0;background:transparent;color:#9a958b}
-.msg{color:#9a958b;font-size:13px;min-height:18px}
-.card{background:#14171f;border:1px solid rgba(255,255,255,.1);border-radius:20px;padding:16px;margin:12px 0}
-.bus{font-size:40px;font-weight:720;line-height:.9}
-.badge{color:#f0c36a;font-size:11px}
-.badge.rail{color:#7dffc2}
-.to{float:right;text-align:right;color:#9a958b;font-size:13px}
-.stop{margin-top:12px}
-.dist{color:#9a958b;font-size:12px}
-.times{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:14px}
-.slot{background:rgba(255,255,255,.04);border-radius:14px;padding:10px 6px;text-align:center}
+.msg{color:#9a958b;font-size:12px;min-height:16px}
+.card{background:#14171f;border:1px solid rgba(255,255,255,.1);border-radius:18px;padding:14px;margin:10px 0}
+.top{display:flex;gap:10px;align-items:flex-start}
+.ico{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex:0 0 36px}
+.ico svg{width:22px;height:22px}
+.kmb{background:#8b1e1e}.ctb{background:#c45a12}.mtr{background:#0d6b4c}
+.bus{font-size:clamp(20px,6vw,28px);font-weight:760;line-height:1}
+.meta{color:#9a958b;font-size:clamp(11px,3.2vw,13px);margin-top:2px;overflow-wrap:anywhere}
+.to{margin-left:auto;text-align:right;color:#9a958b;font-size:12px}
+.times{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-top:12px}
+.slot{background:rgba(255,255,255,.04);border-radius:12px;padding:8px 4px;text-align:center}
 .lab{font-size:10px;color:#9a958b}
-.big{font-size:20px;font-weight:750;margin:6px 0 2px}
+.big{font-size:18px;font-weight:750;margin:4px 0 2px}
 .soon .big{color:#7dffc2}
 .wait .big{color:#f0c36a}
-.empty .big{color:#6b665e;font-size:14px}
-.clk{font-size:11px;color:#9a958b}
-.fine{color:#5d594f;font-size:11px;margin-top:16px}
-#suggest{list-style:none;margin:8px 0 0;padding:0;background:#161821;border-radius:14px;display:none}
-#suggest li{padding:12px;border-bottom:1px solid rgba(255,255,255,.08);display:flex;justify-content:space-between;gap:8px}
-#suggest small{color:#9a958b}
+.sched .big{color:#c9b8a0}
+.empty .big{color:#6b665e;font-size:13px}
+.clk{font-size:10px;color:#9a958b}
+.fine{color:#5d594f;font-size:11px;margin-top:14px}
+#suggest,#locSuggest,#gateSuggest{list-style:none;margin:8px 0 0;padding:0;background:#12141b;border-radius:14px;display:none}
+#suggest li,#locSuggest li,#gateSuggest li{padding:11px 12px;border-bottom:1px solid rgba(255,255,255,.08)}
+#suggest small,#locSuggest small,#gateSuggest small{color:#9a958b;display:block;font-size:11px}
+.hint{font-size:11px;color:#7a756b;margin:6px 0 0}
+.gate{position:fixed;inset:0;background:rgba(0,0,0,.72);z-index:40;display:none;align-items:flex-end;justify-content:center}
+.gate.on{display:flex}
+.gatebox{width:100%;max-width:430px;background:#161821;border-radius:22px 22px 0 0;padding:22px 18px calc(20px + env(safe-area-inset-bottom));box-shadow:0 -12px 40px rgba(0,0,0,.45)}
+.gatebox h2{margin:0 0 8px;font-size:22px}
+.gatebox p{margin:0 0 14px;color:#c5bfb4;font-size:14px;line-height:1.45}
+.gatebox .locbox{margin-bottom:10px}
+.gbtn{width:100%;border:0;border-radius:14px;padding:14px;font-size:16px;font-weight:700;background:#ff4d3a;color:#fff;margin-top:8px}
 </style>
 </head>
 <body>
 <div class="app">
-<p class="kicker">Live nearby</p>
-<h1>近站到站</h1>
-<p class="sub" id="locLine">示範位置 · 麗晶花園13座</p>
+<div class="brand">
+  <div class="logo3d" aria-hidden="true">
+    <div class="logo-spin">
+      <svg viewBox="0 0 64 64" fill="none">
+        <defs>
+          <linearGradient id="g1" x1="12" y1="8" x2="52" y2="56" gradientUnits="userSpaceOnUse">
+            <stop stop-color="#ff7a4d"/><stop offset="1" stop-color="#ff3b2f"/>
+          </linearGradient>
+          <linearGradient id="g2" x1="20" y1="16" x2="44" y2="40" gradientUnits="userSpaceOnUse">
+            <stop stop-color="#ffe7a3"/><stop offset="1" stop-color="#f0c36a"/>
+          </linearGradient>
+        </defs>
+        <path d="M32 4.5c11.2 0 20.2 8.7 20.2 19.4 0 14.6-16.8 29.4-19.6 31.7a1.2 1.2 0 0 1-1.5 0C28.4 53.3 11.8 38.5 11.8 23.9 11.8 13.2 20.8 4.5 32 4.5z" fill="url(#g1)"/>
+        <path d="M32 7c9.7 0 17.5 7.4 17.5 16.9 0 12.4-14.4 25.6-16.8 27.6a1 1 0 0 1-1.4 0C28.9 49.5 14.5 36.3 14.5 23.9 14.5 14.4 22.3 7 32 7z" fill="#2a0f0c" opacity=".2"/>
+        <rect x="21.2" y="13.2" width="21.6" height="16.4" rx="4.2" fill="#1a1210"/>
+        <rect x="22.4" y="14.4" width="19.2" height="9.2" rx="2.4" fill="url(#g2)"/>
+        <rect x="24" y="16" width="6.4" height="6" rx="1.1" fill="#14261d"/>
+        <rect x="33.6" y="16" width="6.4" height="6" rx="1.1" fill="#14261d"/>
+        <circle cx="25.2" cy="28.6" r="1.7" fill="#f0c36a"/>
+        <circle cx="38.8" cy="28.6" r="1.7" fill="#f0c36a"/>
+        <path d="M26 37.8h12c.7 0 1.2.4 1.4 1l1.8 5.4H22.8l1.8-5.4c.2-.6.7-1 1.4-1z" fill="#1a1210"/>
+        <rect x="24.6" y="40.2" width="3" height="2.2" rx=".5" fill="#7dffc2"/>
+        <rect x="30.5" y="40.2" width="3" height="2.2" rx=".5" fill="#f0c36a"/>
+        <rect x="36.4" y="40.2" width="3" height="2.2" rx=".5" fill="#ff7a4d"/>
+      </svg>
+    </div>
+  </div>
+  <div>
+    <p class="kicker">HAKDOU</p>
+    <h1>刻到</h1>
+  </div>
+  <div class="nowbox">
+    <div class="now-time" id="nowTime">--:--</div>
+    <div class="now-date" id="nowDate">—</div>
+  </div>
+</div>
+<p class="sub" id="locLine">未設定常用位置</p>
 <div class="row">
 <button class="ghost" id="gpsBtn" type="button">開啟定位</button>
-<button class="ghost on" id="demoBtn" type="button">示範位置</button>
+<button class="ghost on" id="homeBtn" type="button">我的常用位置</button>
+</div>
+<div class="panel" id="locPanel">
+<form class="locbox" id="locForm" action="#">
+<input id="locQ" type="search" placeholder="搜尋地點，例如 麗晶花園、彩虹站" autocomplete="off">
+<button type="submit">搜尋</button>
+</form>
+<ul id="locSuggest"></ul>
+<p class="hint">搜尋香港地址／屋苑／車站後儲存做常用位置。定位要用 Safari，並允許「位置」。</p>
 </div>
 <form id="searchForm" class="search" action="#">
-<input id="q" type="text" placeholder="輸入路線或車站，例如 1A、N293、彩虹">
+<input id="q" type="text" placeholder="" autocomplete="off">
+<div class="ph-track" id="phTrack"><span class="ph-move">輸入路線或車站　·　1A　·　N293　·　101　·　彩虹　·　九龍灣　·　再按加入　·　</span></div>
 <button type="submit">加入</button>
 </form>
+<div class="toast" id="toast"></div>
 <ul id="suggest"></ul>
-<div class="quick" id="quick"></div>
-<div class="tags" id="tags"></div>
-<p class="msg" id="msg">搜尋巴士路線或港鐵站名，最近搜尋會留喺上面方便再查。</p>
+<div id="tags"></div>
+<div class="tabs" id="tabs">
+<button type="button" class="on" data-tab="all">全部</button>
+<button type="button" data-tab="bus">巴士</button>
+<button type="button" data-tab="mtr">港鐵</button>
+</div>
+<p class="msg" id="msg">搜尋路線或港鐵站，最近項目會留低。</p>
 <div id="feed"></div>
-<p class="fine">附近車站／鐵路站 · 九巴／龍運／城巴／港鐵公開實時資料</p>
+<p class="fine">九巴／龍運／城巴／港鐵公開資料 · 「原定班次」= 時間表，並非 GPS 實時車</p>
+</div>
+<div class="gate" id="gate">
+  <div class="gatebox">
+    <h2>先設定常用位置</h2>
+    <p>第一次使用請搜尋屋苑／地標／車站，或開啟定位。資料只存在你部裝置，其他人睇唔到。</p>
+    <form class="locbox" id="gateForm" action="#">
+      <input id="gateQ" type="search" placeholder="例如 中環、彩虹站、太古城" autocomplete="off">
+      <button type="submit">搜尋</button>
+    </form>
+    <ul id="gateSuggest"></ul>
+    <button class="gbtn" id="gateGps" type="button">開啟定位並開始</button>
+  </div>
 </div>
 <script>
 (function(){
 var KMB="https://data.etabus.gov.hk/v1/transport/kmb";
 var CTB="https://rt.data.gov.hk/v2/transport/citybus";
 var MTR_ETA="https://rt.data.gov.hk/v1/transport/mtr/getSchedule.php";
-var DEMO={lat:22.330688,lng:114.206918};
-var BUS_MAX=500, MTR_MAX=900;
+var BUS_MAX=800, HARD_CAP=1500, MTR_MAX=900;
 var LINE_NAME={AEL:"機場快綫",TCL:"東涌綫",TML:"屯馬綫",TKL:"將軍澳綫",EAL:"東鐵綫",SIL:"南港島綫",TWL:"荃灣綫",ISL:"港島綫",KTL:"觀塘綫",DRL:"迪士尼綫"};
 var MTR_STATIONS=[{"c":"ADM","zh":"金鐘","en":"Admiralty","lat":22.27942,"lng":114.16435,"ln":["EAL","ISL","SIL","TWL"]},{"c":"AIR","zh":"機場","en":"Airport","lat":22.31592,"lng":113.93648,"ln":["AEL"]},{"c":"AUS","zh":"柯士甸","en":"Austin","lat":22.30491,"lng":114.16632,"ln":["TML"]},{"c":"AWE","zh":"博覽館","en":"AsiaWorld-Expo","lat":22.32175,"lng":113.94123,"ln":["AEL"]},{"c":"CAB","zh":"銅鑼灣","en":"Causeway Bay","lat":22.28019,"lng":114.18424,"ln":["ISL"]},{"c":"CEN","zh":"中環","en":"Central","lat":22.28215,"lng":114.15768,"ln":["ISL","TWL"]},{"c":"CHH","zh":"彩虹","en":"Choi Hung","lat":22.33497,"lng":114.20904,"ln":["KTL"]},{"c":"CHW","zh":"柴灣","en":"Chai Wan","lat":22.26458,"lng":114.23711,"ln":["ISL"]},{"c":"CIO","zh":"第一城","en":"City One","lat":22.38296,"lng":114.20363,"ln":["TML"]},{"c":"CKT","zh":"車公廟","en":"Che Kung Temple","lat":22.37477,"lng":114.18589,"ln":["TML"]},{"c":"CSW","zh":"長沙灣","en":"Cheung Sha Wan","lat":22.33555,"lng":114.15605,"ln":["TWL"]},{"c":"DIH","zh":"鑽石山","en":"Diamond Hill","lat":22.34003,"lng":114.20165,"ln":["KTL","TML"]},{"c":"DIS","zh":"迪士尼","en":"Disneyland Resort","lat":22.31549,"lng":114.04485,"ln":["DRL"]},{"c":"ETS","zh":"尖東","en":"East Tsim Sha Tsui","lat":22.29531,"lng":114.17465,"ln":["TML"]},{"c":"EXC","zh":"會展","en":"Exhibition Centre","lat":22.28165,"lng":114.17531,"ln":["EAL"]},{"c":"FAN","zh":"粉嶺","en":"Fanling","lat":22.4921,"lng":114.13867,"ln":["EAL"]},{"c":"FOH","zh":"炮台山","en":"Fortress Hill","lat":22.28791,"lng":114.19359,"ln":["ISL"]},{"c":"FOT","zh":"火炭","en":"Fo Tan","lat":22.39582,"lng":114.1985,"ln":["EAL"]},{"c":"HAH","zh":"坑口","en":"Hang Hau","lat":22.31574,"lng":114.26431,"ln":["TKL"]},{"c":"HEO","zh":"恆安","en":"Heng On","lat":22.41786,"lng":114.22588,"ln":["TML"]},{"c":"HFC","zh":"杏花邨","en":"Heng Fa Chuen","lat":22.27664,"lng":114.23971,"ln":["ISL"]},{"c":"HIK","zh":"顯徑","en":"Hin Keng","lat":22.36372,"lng":114.17074,"ln":["TML"]},{"c":"HKU","zh":"香港大學","en":"HKU","lat":22.28405,"lng":114.13556,"ln":["ISL"]},{"c":"HOK","zh":"香港","en":"Hong Kong","lat":22.28467,"lng":114.15822,"ln":["AEL","TCL"]},{"c":"HOM","zh":"何文田","en":"Ho Man Tin","lat":22.30939,"lng":114.18259,"ln":["KTL","TML"]},{"c":"HUH","zh":"紅磡","en":"Hung Hom","lat":22.30299,"lng":114.18218,"ln":["EAL","TML"]},{"c":"JOR","zh":"佐敦","en":"Jordan","lat":22.30481,"lng":114.17165,"ln":["TWL"]},{"c":"KAT","zh":"啟德","en":"Kai Tak","lat":22.33042,"lng":114.19935,"ln":["TML"]},{"c":"KET","zh":"堅尼地城","en":"Kennedy Town","lat":22.28121,"lng":114.1284,"ln":["ISL"]},{"c":"KOB","zh":"九龍灣","en":"Kowloon Bay","lat":22.32346,"lng":114.214,"ln":["KTL"]},{"c":"KOT","zh":"九龍塘","en":"Kowloon Tong","lat":22.33712,"lng":114.17578,"ln":["EAL","KTL"]},{"c":"KOW","zh":"九龍","en":"Kowloon","lat":22.30426,"lng":114.16144,"ln":["AEL","TCL"]},{"c":"KSR","zh":"錦上路","en":"Kam Sheung Road","lat":22.43513,"lng":114.06318,"ln":["TML"]},{"c":"KWF","zh":"葵芳","en":"Kwai Fong","lat":22.3568,"lng":114.12779,"ln":["TWL"]},{"c":"KWH","zh":"葵興","en":"Kwai Hing","lat":22.36307,"lng":114.13122,"ln":["TWL"]},{"c":"KWT","zh":"觀塘","en":"Kwun Tong","lat":22.31209,"lng":114.2265,"ln":["KTL"]},{"c":"LAK","zh":"茘景","en":"Lai King","lat":22.34834,"lng":114.12619,"ln":["TCL","TWL"]},{"c":"LAT","zh":"藍田","en":"Lam Tin","lat":22.30683,"lng":114.23274,"ln":["KTL"]},{"c":"LCK","zh":"茘枝角","en":"Lai Chi Kok","lat":22.33725,"lng":114.14796,"ln":["TWL"]},{"c":"LET","zh":"利東","en":"Lei Tung","lat":22.24184,"lng":114.156,"ln":["SIL"]},{"c":"LHP","zh":"康城","en":"LOHAS Park","lat":22.29559,"lng":114.26873,"ln":["TKL"]},{"c":"LMC","zh":"落馬洲","en":"Lok Ma Chau","lat":22.51447,"lng":114.06569,"ln":["EAL"]},{"c":"LOF","zh":"樂富","en":"Lok Fu","lat":22.33801,"lng":114.18703,"ln":["KTL"]},{"c":"LOP","zh":"朗屏","en":"Long Ping","lat":22.44763,"lng":114.02545,"ln":["TML"]},{"c":"LOW","zh":"羅湖","en":"Lo Wu","lat":22.52764,"lng":114.11323,"ln":["EAL"]},{"c":"MEF","zh":"美孚","en":"Mei Foo","lat":22.33793,"lng":114.13639,"ln":["TML","TWL"]},{"c":"MKK","zh":"旺角東","en":"Mong Kok East","lat":22.32202,"lng":114.17259,"ln":["EAL"]},{"c":"MOK","zh":"旺角","en":"Mong Kok","lat":22.3193,"lng":114.16935,"ln":["KTL","TWL"]},{"c":"MOS","zh":"馬鞍山","en":"Ma On Shan","lat":22.42491,"lng":114.23198,"ln":["TML"]},{"c":"NAC","zh":"南昌","en":"Nam Cheong","lat":22.32688,"lng":114.1535,"ln":["TCL","TML"]},{"c":"NOP","zh":"北角","en":"North Point","lat":22.29118,"lng":114.20039,"ln":["ISL","TKL"]},{"c":"NTK","zh":"牛頭角","en":"Ngau Tau Kok","lat":22.3155,"lng":114.21898,"ln":["KTL"]},{"c":"OCP","zh":"海洋公園","en":"Ocean Park","lat":22.2487,"lng":114.17432,"ln":["SIL"]},{"c":"OLY","zh":"奧運","en":"Olympic","lat":22.31779,"lng":114.16025,"ln":["TCL"]},{"c":"POA","zh":"寶琳","en":"Po Lam","lat":22.32256,"lng":114.25787,"ln":["TKL"]},{"c":"PRE","zh":"太子","en":"Prince Edward","lat":22.32441,"lng":114.16828,"ln":["KTL","TWL"]},{"c":"QUB","zh":"鰂魚涌","en":"Quarry Bay","lat":22.28857,"lng":114.2087,"ln":["ISL","TKL"]},{"c":"SHM","zh":"石門","en":"Shek Mun","lat":22.38788,"lng":114.20852,"ln":["TML"]},{"c":"SHS","zh":"上水","en":"Sheung Shui","lat":22.50162,"lng":114.12753,"ln":["EAL"]},{"c":"SHT","zh":"沙田","en":"Sha Tin","lat":22.38213,"lng":114.18691,"ln":["EAL"]},{"c":"SHW","zh":"上環","en":"Sheung Wan","lat":22.2866,"lng":114.15201,"ln":["ISL"]},{"c":"SIH","zh":"兆康","en":"Siu Hong","lat":22.41153,"lng":113.9788,"ln":["TML"]},{"c":"SKM","zh":"石硤尾","en":"Shek Kip Mei","lat":22.33179,"lng":114.16882,"ln":["KTL"]},{"c":"SKW","zh":"筲箕灣","en":"Shau Kei Wan","lat":22.27923,"lng":114.22895,"ln":["ISL"]},{"c":"SOH","zh":"海怡半島","en":"South Horizons","lat":22.24284,"lng":114.14884,"ln":["SIL"]},{"c":"SSP","zh":"深水埗","en":"Sham Shui Po","lat":22.33089,"lng":114.16212,"ln":["TWL"]},{"c":"STW","zh":"沙田圍","en":"Sha Tin Wai","lat":22.37691,"lng":114.19481,"ln":["TML"]},{"c":"SUN","zh":"欣澳","en":"Sunny Bay","lat":22.33211,"lng":114.02904,"ln":["DRL","TCL"]},{"c":"SUW","zh":"宋皇臺","en":"Sung Wong Toi","lat":22.32562,"lng":114.19061,"ln":["TML"]},{"c":"SWH","zh":"西灣河","en":"Sai Wan Ho","lat":22.28218,"lng":114.22182,"ln":["ISL"]},{"c":"SYP","zh":"西營盤","en":"Sai Ying Pun","lat":22.28551,"lng":114.1427,"ln":["ISL"]},{"c":"TAK","zh":"太古","en":"Tai Koo","lat":22.28465,"lng":114.21648,"ln":["ISL"]},{"c":"TAP","zh":"大埔墟","en":"Tai Po Market","lat":22.44458,"lng":114.17039,"ln":["EAL"]},{"c":"TAW","zh":"大圍","en":"Tai Wai","lat":22.37276,"lng":114.17869,"ln":["EAL","TML"]},{"c":"TIH","zh":"天后","en":"Tin Hau","lat":22.28224,"lng":114.19185,"ln":["ISL"]},{"c":"TIK","zh":"調景嶺","en":"Tiu Keng Leng","lat":22.30426,"lng":114.25264,"ln":["KTL","TKL"]},{"c":"TIS","zh":"天水圍","en":"Tin Shui Wai","lat":22.44788,"lng":114.00447,"ln":["TML"]},{"c":"TKO","zh":"將軍澳","en":"Tseung Kwan O","lat":22.30744,"lng":114.26001,"ln":["TKL"]},{"c":"TKW","zh":"土瓜灣","en":"To Kwa Wan","lat":22.31791,"lng":114.18762,"ln":["TML"]},{"c":"TSH","zh":"大水坑","en":"Tai Shui Hang","lat":22.40819,"lng":114.2226,"ln":["TML"]},{"c":"TST","zh":"尖沙咀","en":"Tsim Sha Tsui","lat":22.2977,"lng":114.17218,"ln":["TWL"]},{"c":"TSW","zh":"荃灣","en":"Tsuen Wan","lat":22.37352,"lng":114.11808,"ln":["TWL"]},{"c":"TSY","zh":"青衣","en":"Tsing Yi","lat":22.3584,"lng":114.10728,"ln":["AEL","TCL"]},{"c":"TUC","zh":"東涌","en":"Tung Chung","lat":22.28918,"lng":113.94127,"ln":["TCL"]},{"c":"TUM","zh":"屯門","en":"Tuen Mun","lat":22.39511,"lng":113.97319,"ln":["TML"]},{"c":"TWH","zh":"大窩口","en":"Tai Wo Hau","lat":22.37076,"lng":114.12501,"ln":["TWL"]},{"c":"TWO","zh":"太和","en":"Tai Wo","lat":22.45107,"lng":114.16118,"ln":["EAL"]},{"c":"TWW","zh":"荃灣西","en":"Tsuen Wan West","lat":22.36839,"lng":114.10966,"ln":["TML"]},{"c":"UNI","zh":"大學","en":"University","lat":22.41366,"lng":114.21004,"ln":["EAL"]},{"c":"WAC","zh":"灣仔","en":"Wan Chai","lat":22.27755,"lng":114.17263,"ln":["ISL"]},{"c":"WCH","zh":"黃竹坑","en":"Wong Chuk Hang","lat":22.24798,"lng":114.16799,"ln":["SIL"]},{"c":"WHA","zh":"黃埔","en":"Whampoa","lat":22.30481,"lng":114.18983,"ln":["KTL"]},{"c":"WKS","zh":"烏溪沙","en":"Wu Kai Sha","lat":22.42915,"lng":114.24385,"ln":["TML"]},{"c":"WTS","zh":"黃大仙","en":"Wong Tai Sin","lat":22.34168,"lng":114.19387,"ln":["KTL"]},{"c":"YAT","zh":"油塘","en":"Yau Tong","lat":22.298,"lng":114.237,"ln":["KTL","TKL"]},{"c":"YMT","zh":"油麻地","en":"Yau Ma Tei","lat":22.31283,"lng":114.17066,"ln":["KTL","TWL"]},{"c":"YUL","zh":"元朗","en":"Yuen Long","lat":22.44607,"lng":114.03517,"ln":["TML"]}];
-var MTR_BY={};
-MTR_STATIONS.forEach(function(s){MTR_BY[s.c]=s;});
-var state={loc:{lat:DEMO.lat,lng:DEMO.lng},mode:"demo",items:[],kmbStops:{},kmbRoutes:{},ctbRoutes:{},busy:false};
+var MTR_BY={}; MTR_STATIONS.forEach(function(s){MTR_BY[s.c]=s;});
+var home=null;
+try{var h=JSON.parse(localStorage.getItem("savedHome")||"null"); if(h&&h.lat) home=h;}catch(e){}
+var state={loc:home?{lat:home.lat,lng:home.lng}:null,mode:home?"home":"none",home:home,items:[],tab:"all",kmbStops:{},kmbRoutes:{},ctbRoutes:{},busy:false,cards:[]};
 try{state.items=JSON.parse(localStorage.getItem("watchHistory")||"[]");}catch(e){}
 if(!Array.isArray(state.items)) state.items=[];
 function $(id){return document.getElementById(id);}
 function say(t){$("msg").textContent=t;}
+function toast(t,bad){
+  var el=$("toast"); if(!el) return;
+  el.textContent=t; el.classList.add("on");
+  el.style.background=bad?"#2a1a12":"#14261d";
+  el.style.color=bad?"#ffd7a8":"#c6ffe4";
+  el.style.borderColor=bad?"#c45a12":"#2f7a58";
+  clearTimeout(el._t);
+  el._t=setTimeout(function(){el.classList.remove("on");},3200);
+}
 function norm(s){return String(s||"").trim().toUpperCase().replace(/\s+/g,"");}
 function dist(a,b,c,d){
   var R=6371000,p1=a*Math.PI/180,p2=c*Math.PI/180,dphi=(c-a)*Math.PI/180,dl=(d-b)*Math.PI/180;
@@ -92,129 +190,280 @@ function dist(a,b,c,d){
   return 2*R*Math.asin(Math.sqrt(x));
 }
 function getJson(url){
-  return fetch(url).then(function(r){
-    if(!r.ok) throw new Error(r.status+" "+url);
-    return r.json();
-  });
+  return fetch(url).then(function(r){ if(!r.ok) throw new Error(r.status); return r.json(); });
 }
 function clock(iso){
   var d=new Date(iso);
-  if(isNaN(d)) return String(iso).slice(11,16);
+  if(isNaN(d)) return String(iso||"").slice(11,16);
   return d.toLocaleTimeString("zh-HK",{hour:"2-digit",minute:"2-digit",hour12:false});
 }
-function minsFromIso(iso){
-  var m=Math.round((new Date(iso)-Date.now())/60000);
-  return m<=0?"即將到":(m+"分");
-}
 function persist(){try{localStorage.setItem("watchHistory",JSON.stringify(state.items));}catch(e){}}
+function saveHome(h){
+  state.home=h; state.loc={lat:h.lat,lng:h.lng}; state.mode="home";
+  try{localStorage.setItem("savedHome",JSON.stringify(h));}catch(e){}
+  $("homeBtn").classList.add("on"); $("gpsBtn").classList.remove("on");
+  $("locLine").textContent="常用位置 · "+h.name;
+  $("locPanel").classList.remove("on");
+  if($("gate")) $("gate").classList.remove("on");
+  toast("已儲存常用位置："+h.name,false);
+  refresh();
+}
 function labelOf(it){
-  if(it.t==="mtr"){var s=MTR_BY[it.k]; return s?("港鐵 "+s.zh):it.k;}
+  if(it.t==="mtr"){var s=MTR_BY[it.k]; return s?s.zh:it.k;}
   return it.k;
+}
+function icon(kind){
+  if(kind==="mtr") return '<div class="ico mtr"><svg viewBox="0 0 24 24" fill="#7dffc2"><path d="M12 2c-4.4 0-8 1.2-8 4v9c0 1.7 1.3 3 3 3l-1.5 2h2.2L9 18h6l1.3 2h2.2L17 18c1.7 0 3-1.3 3-3V6c0-2.8-3.6-4-8-4zm-3.2 13.2a1.2 1.2 0 1 1 0-2.4 1.2 1.2 0 0 1 0 2.4zm6.4 0a1.2 1.2 0 1 1 0-2.4 1.2 1.2 0 0 1 0 2.4zM6 7.2h12V12H6V7.2z"/></svg></div>';
+  if(kind==="CTB") return '<div class="ico ctb"><svg viewBox="0 0 24 24" fill="#ffd7a8"><path d="M5 5.5C5 4.1 8.1 3 12 3s7 1.1 7 2.5V17c0 .8-.7 1.5-1.5 1.5L19 20h-1.8l-1.4-1.5H8.2L6.8 20H5l1.5-1.5C5.7 18.5 5 17.8 5 17V5.5zM8 16.2a1.2 1.2 0 1 0 0-2.4 1.2 1.2 0 0 0 0 2.4zm8 0a1.2 1.2 0 1 0 0-2.4 1.2 1.2 0 0 0 0 2.4zM6.6 6.4h10.8v6.2H6.6V6.4z"/></svg></div>';
+  return '<div class="ico kmb"><svg viewBox="0 0 24 24" fill="#ffd0d0"><path d="M5 5.5C5 4.1 8.1 3 12 3s7 1.1 7 2.5V17c0 .8-.7 1.5-1.5 1.5L19 20h-1.8l-1.4-1.5H8.2L6.8 20H5l1.5-1.5C5.7 18.5 5 17.8 5 17V5.5zM8 16.2a1.2 1.2 0 1 0 0-2.4 1.2 1.2 0 0 0 0 2.4zm8 0a1.2 1.2 0 1 0 0-2.4 1.2 1.2 0 0 0 0 2.4zM6.6 6.4h10.8v6.2H6.6V6.4z"/></svg></div>';
 }
 function renderTags(){
   $("tags").innerHTML=state.items.map(function(it,i){
-    return '<span class="tag '+(it.t==="mtr"?"mtr":"")+'"><b>'+labelOf(it)+'</b> <button type="button" data-i="'+i+'">×</button></span>';
-  }).join("");
-  $("quick").innerHTML=state.items.map(function(it){
-    return '<button type="button" class="'+(it.t==="mtr"?"mtr":"")+'" data-hist="'+it.t+':'+it.k+'">'+labelOf(it)+'</button>';
+    return '<span class="tag"><b>'+labelOf(it)+'</b><button type="button" data-i="'+i+'">×</button></span>';
   }).join("");
 }
 function findMtr(q){
-  var raw=String(q||"").trim();
-  var u=norm(q);
-  var hits=[];
+  var raw=String(q||"").trim(), u=norm(q), hits=[];
   MTR_STATIONS.forEach(function(s){
-    if(s.c===u || s.zh===raw || s.en.toUpperCase().replace(/\s+/g,"")===u || s.zh.indexOf(raw)>=0 && raw.length>=2)
-      hits.push(s);
+    if(s.c===u || s.zh===raw || s.en.toUpperCase().replace(/\s+/g,"")===u || (raw.length>=2 && s.zh.indexOf(raw)>=0)) hits.push(s);
   });
-  if(LINE_NAME[u]){
-    MTR_STATIONS.forEach(function(s){ if(s.ln.indexOf(u)>=0) hits.push(s); });
-  }
-  var seen={};
-  return hits.filter(function(s){if(seen[s.c])return false;seen[s.c]=1;return true;});
+  if(LINE_NAME[u]) MTR_STATIONS.forEach(function(s){ if(s.ln.indexOf(u)>=0) hits.push(s); });
+  var seen={}; return hits.filter(function(s){if(seen[s.c])return 0;seen[s.c]=1;return 1;});
 }
 function renderSuggest(q){
   var box=$("suggest");
-  if(!q){box.style.display="none";box.innerHTML="";return;}
-  var hits=[];
-  var u=norm(q);
+  if(!q){box.style.display="none";return;}
+  var hits=[], u=norm(q);
   Object.keys(state.kmbRoutes).forEach(function(r){if(r.indexOf(u)===0) hits.push({t:"bus",k:r,hint:"九巴／龍運"});});
-  Object.keys(state.ctbRoutes).forEach(function(r){
-    if(r.indexOf(u)===0 && !hits.some(function(h){return h.k===r;})) hits.push({t:"bus",k:r,hint:"城巴"});
-  });
-  findMtr(q).forEach(function(s){hits.push({t:"mtr",k:s.c,hint:"港鐵 "+s.ln.map(function(l){return LINE_NAME[l]||l;}).join("／")});});
+  Object.keys(state.ctbRoutes).forEach(function(r){if(r.indexOf(u)===0 && !hits.some(function(h){return h.k===r;})) hits.push({t:"bus",k:r,hint:"城巴"});});
+  findMtr(q).forEach(function(s){hits.push({t:"mtr",k:s.c,hint:"港鐵"});});
   hits=hits.slice(0,8);
-  if(!hits.length){box.style.display="none";box.innerHTML="";return;}
+  if(!hits.length){box.style.display="none";return;}
   box.style.display="block";
   box.innerHTML=hits.map(function(h){
-    var lab=h.t==="mtr"?("港鐵 "+(MTR_BY[h.k]?MTR_BY[h.k].zh:h.k)):h.k;
+    var lab=h.t==="mtr"?((MTR_BY[h.k]||{}).zh||h.k):h.k;
     return '<li data-t="'+h.t+'" data-k="'+h.k+'"><strong>'+lab+'</strong><small>'+h.hint+'</small></li>';
   }).join("");
 }
 function addItem(t,k){
   if(!k) return;
-  state.items=state.items.filter(function(x){return !(x.t===t && x.k===k);});
+  state.items=state.items.filter(function(x){return !(x.t===t&&x.k===k);});
   state.items.unshift({t:t,k:k});
-  state.items=state.items.slice(0,12);
+  state.items=state.items.slice(0,16);
   persist(); renderTags();
   $("q").value=""; $("suggest").style.display="none";
-  say("已加入 "+(t==="mtr"?("港鐵 "+((MTR_BY[k]||{}).zh||k)):k)+"，正在查附近班次…");
+  say("已加入 "+labelOf({t:t,k:k}));
   refresh();
 }
 function parseQuery(raw){
-  var q=String(raw||"").trim();
-  if(!q) return null;
+  var q=String(raw||"").trim(); if(!q) return null;
   var mtr=findMtr(q);
   if(mtr.length===1) return {t:"mtr",k:mtr[0].c};
   if(mtr.length>1) return {t:"mtr",k:mtr[0].c,many:mtr};
   return {t:"bus",k:norm(q)};
 }
-function addFromInput(){
-  var parsed=parseQuery($("q").value);
-  if(!parsed){say("請輸入巴士路線或港鐵站名。");return;}
-  if(parsed.many){
+$("searchForm").addEventListener("submit",function(e){
+  e.preventDefault();
+  var p=parseQuery($("q").value);
+  if(!p){say("請輸入巴士路線或港鐵站名");return;}
+  if(p.many){
     $("suggest").style.display="block";
-    $("suggest").innerHTML=parsed.many.map(function(s){
-      return '<li data-t="mtr" data-k="'+s.c+'"><strong>港鐵 '+s.zh+'</strong><small>'+s.en+'</small></li>';
-    }).join("");
-    say("搵到多個港鐵站，請揀一個。");
+    $("suggest").innerHTML=p.many.map(function(s){return '<li data-t="mtr" data-k="'+s.c+'"><strong>'+s.zh+'</strong><small>'+s.en+'</small></li>';}).join("");
     return;
   }
-  addItem(parsed.t,parsed.k);
+  addItem(p.t,p.k);
+});
+$("q").addEventListener("input",function(){
+  renderSuggest($("q").value);
+  $("phTrack").classList.toggle("off", !!$("q").value || document.activeElement===$("q"));
+});
+$("q").addEventListener("focus",function(){$("phTrack").classList.add("off");});
+$("q").addEventListener("blur",function(){if(!$("q").value)$("phTrack").classList.remove("off");});
+var locTimer;
+function bindLiveSearch(id){
+  var el=$(id); if(!el) return;
+  el.addEventListener("input",function(){
+    clearTimeout(locTimer);
+    var v=el.value;
+    locTimer=setTimeout(function(){ if(String(v).trim().length>=1) searchPlace(v,{live:true}); },180);
+  });
+  el.addEventListener("focus",function(){
+    if(String(el.value).trim().length>=1) searchPlace(el.value,{live:true});
+  });
 }
-$("searchForm").addEventListener("submit",function(e){e.preventDefault();addFromInput();});
-$("q").addEventListener("input",function(){renderSuggest($("q").value);});
-$("suggest").addEventListener("click",function(e){
-  var li=e.target.closest("li"); if(!li) return;
-  addItem(li.getAttribute("data-t"), li.getAttribute("data-k"));
+bindLiveSearch("locQ");
+bindLiveSearch("gateQ");
+$("suggest").addEventListener("click",function(e){var li=e.target.closest("li"); if(li) addItem(li.getAttribute("data-t"),li.getAttribute("data-k"));});
+$("tags").addEventListener("click",function(e){var i=e.target.getAttribute("data-i"); if(i==null)return; state.items.splice(+i,1); persist(); renderTags(); refresh();});
+function pickNearby(list){
+  var byBound={}, out=[];
+  list.filter(function(x){return x.dist<=HARD_CAP;}).forEach(function(x){
+    var k=x.bound+"-"+(x.dest||"");
+    if(!byBound[k] || x.dist<byBound[k].dist) byBound[k]=x;
+  });
+  Object.keys(byBound).forEach(function(k){out.push(byBound[k]);});
+  return out.sort(function(a,b){return a.dist-b.dist;});
+}
+$("tabs").addEventListener("click",function(e){
+  var t=e.target.getAttribute("data-tab"); if(!t) return;
+  state.tab=t;
+  [].forEach.call($("tabs").querySelectorAll("button"),function(b){b.classList.toggle("on",b.getAttribute("data-tab")===t);});
+  paint();
 });
-$("tags").addEventListener("click",function(e){
-  var i=e.target.getAttribute("data-i"); if(i==null) return;
-  state.items.splice(+i,1); persist(); renderTags(); refresh();
-});
-$("quick").addEventListener("click",function(e){
-  var h=e.target.getAttribute("data-hist"); if(!h) return;
-  var p=h.split(":"); addItem(p[0], p.slice(1).join(":"));
-});
-$("demoBtn").onclick=function(){
-  state.loc={lat:DEMO.lat,lng:DEMO.lng}; state.mode="demo";
-  $("demoBtn").classList.add("on"); $("gpsBtn").classList.remove("on");
-  $("locLine").textContent="示範位置 · 麗晶花園13座";
-  refresh();
-};
-$("gpsBtn").onclick=function(){
-  if(!navigator.geolocation){say("此瀏覽器不支援定位");return;}
-  say("正在要求定位…");
-  navigator.geolocation.getCurrentPosition(function(pos){
-    state.loc={lat:pos.coords.latitude,lng:pos.coords.longitude};
-    state.mode="gps";
-    $("gpsBtn").classList.add("on"); $("demoBtn").classList.remove("on");
-    $("locLine").textContent="已用你而家嘅位置";
+$("homeBtn").onclick=function(){
+  if(!state.home){ if($("gate")) $("gate").classList.add("on"); return; }
+  if(state.mode!=="home"){
+    state.mode="home"; state.loc={lat:state.home.lat,lng:state.home.lng};
+    $("homeBtn").classList.add("on"); $("gpsBtn").classList.remove("on");
+    $("locLine").textContent="常用位置 · "+state.home.name;
+    $("locPanel").classList.remove("on");
     refresh();
-  },function(){say("定位失敗，可用示範位置");});
+    return;
+  }
+  $("locPanel").classList.toggle("on");
 };
+function geoError(err){
+  var code=err&&err.code;
+  var text="定位失敗。";
+  if(code===1) text="定位被拒絕。iPhone：設定 → Safari → 位置 → 允許。";
+  else if(code===2) text="暫時讀唔到位置，可改用常用位置。";
+  else if(code===3) text="定位逾時。請行出空曠少少或再用常用位置。";
+  say(text);
+}
+function nameFromCoords(lat,lng,done){
+  var nearest=null, nd=1e9;
+  POIS.concat(MTR_STATIONS.map(function(s){return {name:s.zh+"站",lat:s.lat,lng:s.lng};})).forEach(function(p){
+    var d=dist(lat,lng,p.lat,p.lng);
+    if(d<nd){nd=d; nearest=p;}
+  });
+  var fallback=(nearest&&nd<350)?nearest.name:"即時位置";
+  fetch("https://photon.komoot.io/reverse?lang=zh&lon="+lng+"&lat="+lat).then(function(r){return r.json();}).then(function(j){
+    var p=(j.features&&j.features[0]&&j.features[0].properties)||{};
+    var n=p.name||p.street||fallback;
+    var extra=[p.district,p.city].filter(Boolean).join(" ");
+    done(extra&&n.indexOf(extra)<0?(n+" · "+extra):n);
+  }).catch(function(){done(fallback);});
+}
+function applyGps(pos){
+  state.loc={lat:pos.coords.latitude,lng:pos.coords.longitude};
+  state.mode="gps";
+  $("gpsBtn").classList.add("on"); $("homeBtn").classList.remove("on");
+  $("locPanel").classList.remove("on");
+  $("locLine").textContent="已用即時定位 · 讀取地名中";
+  nameFromCoords(state.loc.lat,state.loc.lng,function(n){
+    $("locLine").textContent="已用即時定位 · "+n;
+    if(!state.home) saveHome({name:n,lat:state.loc.lat,lng:state.loc.lng});
+  });
+  say("定位成功");
+  refresh();
+}
+function useGps(){
+  if(!window.isSecureContext){say("定位需要 https（請用 GitHub Pages 連結，唔好開本機檔）。");return;}
+  if(!navigator.geolocation){say("此瀏覽器不支援定位");return;}
+  $("locPanel").classList.remove("on");
+  say("正在要求定位…請撳允許");
+  var opts={enableHighAccuracy:true,timeout:20000,maximumAge:15000};
+  navigator.geolocation.getCurrentPosition(applyGps,function(err){
+    navigator.geolocation.getCurrentPosition(applyGps,geoError,{enableHighAccuracy:false,timeout:25000,maximumAge:60000});
+  },opts);
+}
+$("gpsBtn").onclick=useGps;
+$("locForm").addEventListener("submit",function(e){e.preventDefault(); searchPlace($("locQ").value);});
+var POIS=[
+  {name:"麗晶花園",en:"Richland Gardens",lat:22.330688,lng:114.206918,hint:"九龍灣屋苑",aka:"richland garden block 13 麗晶 13座"},
+  {name:"麗晶花園13座",en:"Richland Gardens Block 13",lat:22.3312,lng:114.2076,hint:"九龍灣"},
+  {name:"中銀大廈",en:"Bank of China Tower",lat:22.27927,lng:114.16157,hint:"中環"},
+  {name:"國際金融中心",en:"IFC",lat:22.285,lng:114.158,hint:"中環"},
+  {name:"時代廣場",en:"Times Square",lat:22.2783,lng:114.1822,hint:"銅鑼灣"},
+  {name:"太古廣場",en:"Pacific Place",lat:22.2776,lng:114.1655,hint:"金鐘"},
+  {name:"海港城",en:"Harbour City",lat:22.295,lng:114.1688,hint:"尖沙咀"},
+  {name:"朗豪坊",en:"Langham Place",lat:22.3182,lng:114.1684,hint:"旺角"},
+  {name:"圓方",en:"Elements",lat:22.3047,lng:114.1616,hint:"九龍"},
+  {name:"apm",en:"apm",lat:22.3125,lng:114.2253,hint:"觀塘"},
+  {name:"MegaBox",en:"MegaBox",lat:22.3199,lng:114.2088,hint:"九龍灣"},
+  {name:"德福廣場",en:"Telford Plaza",lat:22.3239,lng:114.2135,hint:"九龍灣"},
+  {name:"啟業邨",en:"Kai Yip Estate",lat:22.3286,lng:114.2088,hint:"九龍灣"},
+  {name:"坪石邨",en:"Ping Shek Estate",lat:22.3336,lng:114.2093,hint:"彩虹"},
+  {name:"啟德郵輪碼頭",en:"Kai Tak Cruise Terminal",lat:22.3064,lng:114.2136,hint:"啟德"},
+  {name:"香港國際機場",en:"Hong Kong International Airport",lat:22.308,lng:113.9185,hint:"赤鱲角"},
+  {name:"香港大學",en:"The University of Hong Kong",lat:22.28405,lng:114.13556,hint:"西區",aka:"hku"},
+  {name:"香港城市大學",en:"City University of Hong Kong",lat:22.337,lng:114.174,hint:"九龍塘",aka:"cityu"},
+  {name:"香港理工大學",en:"The Hong Kong Polytechnic University",lat:22.3046,lng:114.1796,hint:"紅磡",aka:"polyu"},
+  {name:"太古城",en:"Tai Koo Shing",lat:22.2856,lng:114.2165,hint:"港島東"}
+];
+function showPlaces(out,live){
+  var boxes=[$("locSuggest"),$("gateSuggest")].filter(Boolean);
+  if(!out.length){
+    boxes.forEach(function(box){box.style.display="none";});
+    if(!live){
+      toast("搵唔到呢個地點，試中文或英文屋苑名，例如 麗晶花園／Richland",true);
+      say("搵唔到呢個地點");
+    }
+    return;
+  }
+  boxes.forEach(function(box){
+    box.style.display="block";
+    box._places=out;
+    box.innerHTML=out.slice(0,8).map(function(p,i){
+      var sub=[p.en&&p.en!==p.name?p.en:"",p.hint||""].filter(Boolean).join(" · ");
+      return '<li data-i="'+i+'"><strong>'+p.name+'</strong><small>'+sub+'</small></li>';
+    }).join("");
+  });
+  say("請揀一個地點儲存做常用位置");
+}
+function softHit(hay,q){
+  hay=String(hay||"").toLowerCase().replace(/['’]/g,"");
+  q=String(q||"").toLowerCase().replace(/['’]/g,"").replace(/\s+/g," ").trim();
+  if(!q) return false;
+  if(hay.indexOf(q)>=0) return true;
+  return q.split(" ").every(function(w){return w && hay.indexOf(w)>=0;});
+}
+function localPlaces(q){
+  var out=[];
+  POIS.forEach(function(p){
+    var blob=[p.name,p.en,p.aka,p.hint].join(" ");
+    if(softHit(blob,q)) out.push(p);
+  });
+  MTR_STATIONS.forEach(function(s){
+    if(softHit(s.zh+" "+s.en+" "+s.c+"站",q))
+      out.push({name:s.zh+"站",en:s.en+" Station",lat:s.lat,lng:s.lng,hint:"港鐵"});
+  });
+  return out;
+}
+function inHK(lat,lng){return lat>22.12&&lat<22.58&&lng>113.75&&lng<114.52;}
+function searchPlace(q,opt){
+  opt=opt||{};
+  q=String(q||"").trim();
+  if(!q){ if(!opt.live) toast("請輸入屋苑、地標或車站",true); return; }
+  var local=localPlaces(q);
+  if(local.length) showPlaces(local,true);
+  else if(!opt.live) say("搜尋地點中…");
+  var url="https://photon.komoot.io/api/?limit=8&lang=en&bbox=113.8,22.15,114.45,22.58&q="+encodeURIComponent(q);
+  fetch(url).then(function(r){return r.json();}).then(function(j){
+    (j.features||[]).forEach(function(f){
+      var c=f.geometry&&f.geometry.coordinates; if(!c) return;
+      if(!inHK(c[1],c[0])) return;
+      var p=f.properties||{};
+      var name=p.name||q;
+      var hint=[p.street,p.district,p.city].filter(Boolean).join(" · ");
+      local.push({name:name,en:p.name,lat:c[1],lng:c[0],hint:hint||"地圖搜尋"});
+    });
+    var seen={}, out=[];
+    local.forEach(function(p){var k=p.name+Math.round(p.lat*400); if(seen[k])return; seen[k]=1; out.push(p);});
+    showPlaces(out,opt.live);
+  }).catch(function(){ showPlaces(local,opt.live); });
+}
+function pickPlace(box,e){
+  var li=e.target.closest("li"); if(!li||!box) return;
+  var p=(box._places||[])[+li.getAttribute("data-i")];
+  if(p) saveHome({name:p.name,lat:p.lat,lng:p.lng});
+}
+$("locSuggest").addEventListener("click",function(e){pickPlace($("locSuggest"),e);});
+if($("gateSuggest")) $("gateSuggest").addEventListener("click",function(e){pickPlace($("gateSuggest"),e);});
+if($("gateForm")) $("gateForm").addEventListener("submit",function(e){e.preventDefault(); searchPlace($("gateQ").value);});
+if($("gateGps")) $("gateGps").onclick=function(){ useGps(); };
+
 function loadCatalog(){
-  say("正在載入路線資料…");
   return Promise.all([
     getJson(KMB+"/route"),
     getJson(KMB+"/stop"),
@@ -227,30 +476,22 @@ function loadCatalog(){
       state.kmbRoutes[k].push(r);
     });
     (arr[2].data||[]).forEach(function(r){state.ctbRoutes[String(r.route).toUpperCase()]=r;});
-    say(state.items.length?"資料已載入，正在更新班次…":"資料已載入。輸入路線或港鐵站名再加入。");
-  }).catch(function(){say("目錄載入不完整，仍可直接搜尋。");});
+  }).catch(function(){});
 }
 function getKmbStop(id){
   if(state.kmbStops[id]) return Promise.resolve(state.kmbStops[id]);
-  return getJson(KMB+"/stop/"+id).then(function(j){
-    if(j.data) state.kmbStops[id]=j.data;
-    return j.data||null;
-  }).catch(function(){return null;});
+  return getJson(KMB+"/stop/"+id).then(function(j){ if(j.data) state.kmbStops[id]=j.data; return j.data||null; }).catch(function(){return null;});
 }
 function kmbNearby(route){
   var variants=state.kmbRoutes[route]||[{bound:"O",service_type:"1"},{bound:"I",service_type:"1"}];
   var tasks=variants.map(function(v){
     var dir=v.bound==="I"?"inbound":"outbound";
-    var stype=v.service_type||"1";
-    return getJson(KMB+"/route-stop/"+route+"/"+dir+"/"+stype).then(function(j){
-      return {v:v,rows:j.data||[]};
-    }).catch(function(){return {v:v,rows:[]};});
+    return getJson(KMB+"/route-stop/"+route+"/"+dir+"/"+(v.service_type||"1")).then(function(j){return {v:v,rows:j.data||[]};}).catch(function(){return {v:v,rows:[]};});
   });
   return Promise.all(tasks).then(function(parts){
-    var ids=[];
-    parts.forEach(function(p){p.rows.forEach(function(rs){if(ids.indexOf(rs.stop)<0) ids.push(rs.stop);});});
+    var ids=[]; parts.forEach(function(p){p.rows.forEach(function(rs){if(ids.indexOf(rs.stop)<0) ids.push(rs.stop);});});
     return Promise.all(ids.map(getKmbStop)).then(function(){
-      var all=[], seen={};
+      var all=[],seen={};
       parts.forEach(function(p){
         p.rows.forEach(function(rs){
           var stop=state.kmbStops[rs.stop]; if(!stop) return;
@@ -260,52 +501,51 @@ function kmbNearby(route){
         });
       });
       all.sort(function(a,b){return a.dist-b.dist;});
-      var inRange=all.filter(function(x){return x.dist<=BUS_MAX;});
-      return inRange.length?inRange:all.slice(0,2);
+      return pickNearby(all);
     });
   });
 }
 var ctbStopCache={};
 function ctbNearby(route){
-  var meta=state.ctbRoutes[route];
-  if(!meta) return Promise.resolve([]);
-  var dirs=["outbound","inbound"];
-  return Promise.all(dirs.map(function(dir){
-    return getJson(CTB+"/route-stop/CTB/"+route+"/"+dir).then(function(j){return {dir:dir,rows:j.data||[]};}).catch(function(){return {dir:dir,rows:[]};});
-  })).then(function(parts){
-    var stopIds=[];
-    parts.forEach(function(p){p.rows.forEach(function(rs){if(stopIds.indexOf(rs.stop)<0) stopIds.push(rs.stop);});});
-    return Promise.all(stopIds.map(function(id){
-      if(ctbStopCache[id]) return Promise.resolve([id,ctbStopCache[id]]);
-      return getJson(CTB+"/stop/"+id).then(function(j){ctbStopCache[id]=j.data;return [id,j.data];}).catch(function(){return [id,null];});
-    })).then(function(pairs){
-      pairs.forEach(function(p){ctbStopCache[p[0]]=p[1];});
-      var out=[],seen={};
-      parts.forEach(function(p){
-        var bound=p.dir==="inbound"?"I":"O";
-        p.rows.forEach(function(rs){
-          var stop=ctbStopCache[rs.stop]; if(!stop||!stop.lat) return;
-          var d=dist(state.loc.lat,state.loc.lng,Number(stop.lat),Number(stop.long));
-          var key=rs.stop+"-"+bound; if(seen[key]) return; seen[key]=1;
-          out.push({kind:"bus",co:"CTB",coName:"城巴",route:route,stopId:rs.stop,name:stop.name_tc,nameEn:stop.name_en,dist:Math.round(d),bound:bound,serviceType:"1",dest:bound==="O"?meta.dest_tc:meta.orig_tc});
+  var metaP=state.ctbRoutes[route]?Promise.resolve(state.ctbRoutes[route]):getJson(CTB+"/route/CTB/"+route).then(function(j){state.ctbRoutes[route]=j.data||{};return state.ctbRoutes[route];}).catch(function(){return {};});
+  return metaP.then(function(meta){
+    return Promise.all(["outbound","inbound"].map(function(dir){
+      return getJson(CTB+"/route-stop/CTB/"+route+"/"+dir).then(function(j){return {dir:dir,rows:j.data||[]};}).catch(function(){return {dir:dir,rows:[]};});
+    })).then(function(parts){
+      var ids=[]; parts.forEach(function(p){p.rows.forEach(function(rs){if(ids.indexOf(rs.stop)<0) ids.push(rs.stop);});});
+      return Promise.all(ids.map(function(id){
+        if(ctbStopCache[id]) return Promise.resolve(ctbStopCache[id]);
+        return getJson(CTB+"/stop/"+id).then(function(j){ctbStopCache[id]=j.data;return j.data;}).catch(function(){return null;});
+      })).then(function(){
+        var out=[],seen={};
+        parts.forEach(function(p){
+          var bound=p.dir==="inbound"?"I":"O";
+          p.rows.forEach(function(rs){
+            var stop=ctbStopCache[rs.stop]; if(!stop||!stop.lat) return;
+            var d=dist(state.loc.lat,state.loc.lng,Number(stop.lat),Number(stop.long));
+            var key=rs.stop+"-"+bound; if(seen[key]) return; seen[key]=1;
+            out.push({kind:"bus",co:"CTB",coName:"城巴",route:route,stopId:rs.stop,name:stop.name_tc||stop.name_en,nameEn:stop.name_en,dist:Math.round(d),bound:bound,serviceType:"1",dest:bound==="O"?(meta.dest_tc||meta.orig_tc||""):(meta.orig_tc||meta.dest_tc||"")});
+          });
         });
+        out.sort(function(a,b){return a.dist-b.dist;});
+        return pickNearby(out);
       });
-      out.sort(function(a,b){return a.dist-b.dist;});
-      var inRange=out.filter(function(x){return x.dist<=BUS_MAX;});
-      return inRange.length?inRange:out.slice(0,2);
     });
   });
 }
+function isSched(rmk){return /原定|Scheduled/i.test(rmk||"");}
 function busEtas(item){
-  var url=item.co==="KMB"
-    ? KMB+"/eta/"+item.stopId+"/"+item.route+"/"+item.serviceType
-    : CTB+"/eta/CTB/"+item.stopId+"/"+item.route;
+  var url=item.co==="KMB"?KMB+"/eta/"+item.stopId+"/"+item.route+"/"+item.serviceType:CTB+"/eta/CTB/"+item.stopId+"/"+item.route;
   return getJson(url).then(function(j){
     return (j.data||[]).filter(function(x){return !item.bound||!x.dir||x.dir===item.bound;})
-      .filter(function(x){return x.eta && new Date(x.eta)>Date.now()-20000;})
-      .sort(function(a,b){return new Date(a.eta)-new Date(b.eta);})
+      .filter(function(x){return x.eta && new Date(x.eta)>Date.now()-30000;})
+      .sort(function(a,b){
+        var as=isSched(a.rmk_tc||a.rmk_en)?1:0, bs=isSched(b.rmk_tc||b.rmk_en)?1:0;
+        if(as!==bs) return as-bs;
+        return new Date(a.eta)-new Date(b.eta);
+      })
       .slice(0,3)
-      .map(function(x){return {eta:x.eta,dest:x.dest_tc,rmk:x.rmk_tc};});
+      .map(function(x){return {eta:x.eta,dest:x.dest_tc,rmk:x.rmk_tc,sched:isSched(x.rmk_tc||x.rmk_en)};});
   }).catch(function(){return [];});
 }
 function mtrCardsFor(code){
@@ -313,89 +553,143 @@ function mtrCardsFor(code){
   var d=dist(state.loc.lat,state.loc.lng,sta.lat,sta.lng);
   return Promise.all(sta.ln.map(function(line){
     return getJson(MTR_ETA+"?line="+line+"&sta="+code).then(function(j){
-      var pack=(j.data||{})[line+"-"+code]||{};
-      var cards=[];
+      var pack=(j.data||{})[line+"-"+code]||{}, cards=[];
       ["UP","DOWN"].forEach(function(dir){
         var rows=(pack[dir]||[]).filter(function(x){return x.valid!=="N";}).slice(0,3);
         if(!rows.length) return;
         cards.push({
-          kind:"mtr", co:"MTR", coName:"港鐵 "+(LINE_NAME[line]||line),
-          route:LINE_NAME[line]||line, stopId:code, name:sta.zh, nameEn:sta.en,
-          dist:Math.round(d), dest:(MTR_BY[rows[0].dest]||{}).zh||rows[0].dest,
-          etas:rows.map(function(x){
-            return {eta:x.time, dest:(MTR_BY[x.dest]||{}).zh||x.dest, rmk:(x.plat?("月台 "+x.plat):""), ttnt:x.ttnt};
-          })
+          kind:"mtr",co:"MTR",coName:"港鐵",route:LINE_NAME[line]||line,stopId:code,name:sta.zh,nameEn:sta.en,
+          dist:Math.round(d),dest:(MTR_BY[rows[0].dest]||{}).zh||rows[0].dest,
+          etas:rows.map(function(x){return {eta:x.time,dest:(MTR_BY[x.dest]||{}).zh||x.dest,rmk:x.plat?("月台 "+x.plat):"",ttnt:x.ttnt,sched:false};})
         });
       });
       return cards;
     }).catch(function(){return [];});
-  })).then(function(groups){return [].concat.apply([],groups);});
+  })).then(function(g){return [].concat.apply([],g);});
 }
-function nearbyMtrWatched(){
-  var wanted={};
-  state.items.forEach(function(it){if(it.t==="mtr") wanted[it.k]=1;});
-  if(!Object.keys(wanted).length){
-    // still show nearest MTR if user only searched buses? no, only watched
-    return Promise.resolve([]);
-  }
-  var jobs=[];
-  Object.keys(wanted).forEach(function(code){jobs.push(mtrCardsFor(code));});
-  return Promise.all(jobs).then(function(g){return [].concat.apply([],g);});
+function minsLeft(iso){
+  var t=Date.parse(iso);
+  if(isNaN(t)) return null;
+  return Math.floor((t-Date.now())/60000);
 }
 function slot(row,i){
-  if(!row||(!row.eta && row.ttnt==null)) return '<div class="slot empty"><div class="lab">第 '+i+' 班</div><div class="big">暫無</div><div class="clk">—</div></div>';
-  var big=row.ttnt!=null?(Number(row.ttnt)<=0?"即將到":(row.ttnt+"分")):minsFromIso(row.eta);
-  var m=row.ttnt!=null?Number(row.ttnt):Math.round((new Date(row.eta)-Date.now())/60000);
-  var klass=m<=5?"soon":"wait";
-  return '<div class="slot '+klass+'"><div class="lab">第 '+i+' 班</div><div class="big">'+big+'</div><div class="clk">'+(row.eta?clock(row.eta):"—")+(row.rmk?(" · "+row.rmk):"")+'</div></div>';
+  if(!row||(!row.eta && row.ttnt==null && row.ttnt!==0)) return '<div class="slot empty"><div class="lab">第 '+i+' 班</div><div class="big">暫無</div></div>';
+  var m=row.ttnt!=null&&row.ttnt!==""?Math.floor(Number(row.ttnt)):minsLeft(row.eta);
+  if(m==null) return '<div class="slot empty"><div class="lab">第 '+i+' 班</div><div class="big">暫無</div></div>';
+  var big=m<=1?"即將到":(m+"分");
+  var klass=row.sched?"sched":(m<=5?"soon":"wait");
+  var note=row.sched?"原定班次":(row.rmk||"");
+  return '<div class="slot '+klass+'"><div class="lab">第 '+i+' 班'+(row.sched?" · 時間表":" · 實時")+'</div><div class="big">'+big+'</div><div class="clk">'+(row.eta?clock(row.eta):"—")+(note && !row.sched?(" · "+note):"")+'</div></div>';
 }
-function renderCards(cards){
+function paint(){
+  var cards=state.cards.filter(function(c){
+    if(state.tab==="bus") return c.kind==="bus";
+    if(state.tab==="mtr") return c.kind==="mtr";
+    return true;
+  });
   if(!state.items.length){
-    $("feed").innerHTML='<div class="card">輸入巴士路線（九巴／城巴）或港鐵站名，加入後會顯示附近到站時間。最近搜尋會留低做快捷鍵。</div>';
+    $("feed").innerHTML='<div class="card">加入巴士路線或港鐵站後，會顯示附近到站。可用分頁篩選巴士／港鐵。</div>';
     return;
   }
   if(!cards.length){
-    $("feed").innerHTML='<div class="card">已加入項目，但附近未搵到班次。可開定位或行近啲站再試。</div>';
+    $("feed").innerHTML='<div class="card">呢一頁暫時無班次。可轉「全部」或行近啲站。</div>';
     return;
   }
   $("feed").innerHTML=cards.map(function(c){
     var dest=(c.etas[0]&&c.etas[0].dest)||c.dest||"—";
-    return '<article class="card"><div class="to">往<br><b style="color:#fff">'+dest+'</b></div><div class="badge '+(c.kind==="mtr"?"rail":"")+'">'+c.coName+'</div><div class="bus">'+c.route+'</div><div class="stop">'+c.name+'</div><div class="dist">'+c.dist+' 米 · '+(c.nameEn||"")+'</div><div class="times">'+[0,1,2].map(function(i){return slot(c.etas[i],i+1);}).join("")+'</div></article>';
+    var live=c.etas.some(function(e){return e&&!e.sched;});
+    return '<article class="card"><div class="top">'+icon(c.kind==="mtr"?"mtr":c.co)+
+      '<div><div class="bus">'+c.route+'</div><div class="meta">'+c.coName+' · '+c.name+' · '+c.dist+'米</div></div>'+
+      '<div class="to">往<br><b style="color:#fff">'+dest+'</b>'+(live?"":"<div class=hint>官方暫時只有時間表</div>")+'</div></div>'+
+      '<div class="times">'+[0,1,2].map(function(i){return slot(c.etas[i],i+1);}).join("")+'</div></article>';
   }).join("");
 }
 function refresh(){
-  if(state.busy) return;
-  state.busy=true;
-  renderTags();
-  if(!state.items.length){renderCards([]);state.busy=false;return;}
-  var busRoutes=state.items.filter(function(x){return x.t==="bus";}).map(function(x){return x.k;});
-  var jobs=busRoutes.map(function(route){
-    return Promise.all([kmbNearby(route),ctbNearby(route)]).then(function(arr){
+  if(!state.loc){ say("請先設定常用位置或開啟定位"); return; }
+  if(state.busy){state.needRefresh=true; return;}
+  state.busy=true; renderTags();
+  if(!state.items.length){state.cards=[]; paint(); state.busy=false; return;}
+  var jobs=state.items.filter(function(x){return x.t==="bus";}).map(function(x){
+    return Promise.all([kmbNearby(x.k),ctbNearby(x.k)]).then(function(arr){
       var nearby=arr[0].concat(arr[1]).sort(function(a,b){return a.dist-b.dist;});
       var used={},picked=[];
       nearby.forEach(function(item){
-        var k=item.co+"-"+item.bound;
+        var dest=(item.etas&&item.etas[0]&&item.etas[0].dest)||item.dest||"";
+        var k=item.co+"-"+item.route+"-"+item.bound+"-"+dest;
         if(used[k]) return; used[k]=1; picked.push(item);
       });
-      return Promise.all(picked.map(function(item){
-        return busEtas(item).then(function(e){item.etas=e;return item;});
-      }));
+      return Promise.all(picked.map(function(item){return busEtas(item).then(function(e){item.etas=e;return item;});}));
     });
   });
-  jobs.push(nearbyMtrWatched());
-  Promise.all(jobs).then(function(groups){
-    var cards=[].concat.apply([],groups);
-    cards.sort(function(a,b){return a.dist-b.dist;});
-    renderCards(cards);
-    say(cards.length?("已更新 "+new Date().toLocaleTimeString("zh-HK",{hour12:false})):"附近暫時沒有班次");
+  var mtrJobs=state.items.filter(function(x){return x.t==="mtr";}).map(function(x){return mtrCardsFor(x.k);});
+  Promise.all(jobs.concat(mtrJobs)).then(function(groups){
+    var cards=[].concat.apply([],groups).filter(function(c){return c&&c.etas;});
+    function destKey(c){
+      var d=(c.etas[0]&&c.etas[0].dest)||c.dest||"";
+      return String(d).replace(/[()（）\s]/g,"").replace(/裕民坊|西區|東/g,"");
+    }
+    function liveScore(c){
+      var live=(c.etas||[]).filter(function(e){return e&&e.eta&&!e.sched;}).length;
+      return live?0:1;
+    }
+    var uniq={}, slim=[];
+    cards.forEach(function(c){
+      var k=c.kind==="mtr"?("mtr-"+c.stopId+"-"+c.route+"-"+destKey(c)):(c.route+"-"+destKey(c));
+      var old=uniq[k];
+      if(!old){ uniq[k]=c; slim.push(c); return; }
+      var names=(old.coName||"")+"／"+(c.coName||"");
+      var seen={}; old.coName=names.split("／").filter(function(n){if(!n||seen[n])return 0;seen[n]=1;return 1;}).join("／");
+      if(liveScore(c)<liveScore(old) || (liveScore(c)===liveScore(old) && c.dist<old.dist)){
+        c.coName=old.coName;
+        slim[slim.indexOf(old)]=c; uniq[k]=c;
+      }
+    });
+    cards=slim.filter(function(c){
+      if(c.kind!=="bus") return true;
+      return (c.etas||[]).some(function(e){return e&&e.eta;});
+    });
+    cards.sort(function(a,b){
+      var ra=String(a.route||""), rb=String(b.route||"");
+      if(ra!==rb){
+        var na=parseInt(ra,10), nb=parseInt(rb,10);
+        if(!isNaN(na)&&!isNaN(nb)&&na!==nb) return na-nb;
+        return ra.localeCompare(rb,"zh-HK",{numeric:true});
+      }
+      function firstMin(c){
+        var e=c.etas&&c.etas[0];
+        if(!e) return 99999;
+        if(e.ttnt!=null&&e.ttnt!=="") return Number(e.ttnt);
+        if(e.eta) return (new Date(e.eta)-Date.now())/60000;
+        return 99999;
+      }
+      return firstMin(a)-firstMin(b);
+    });
+    state.cards=cards; paint();
+    say("已更新 "+new Date().toLocaleTimeString("zh-HK",{hour12:false})+" · 與官方公開 ETA 相同來源");
   }).catch(function(){
-    say("查詢失敗。請用 Safari 以 https 網址開啟。");
-    $("feed").innerHTML='<div class="card">網絡被擋或未用 Safari 開啟。</div>';
-  }).then(function(){state.busy=false;});
+    say("查詢失敗。請用 Safari 開 github.io 網址，並允許網絡。");
+  }).then(function(){state.busy=false; if(state.needRefresh){state.needRefresh=false; refresh();}});
 }
 renderTags();
-loadCatalog().then(function(){if(state.items.length) refresh(); else renderCards([]);});
-setInterval(function(){if(state.items.length) refresh();},30000);
+if(state.home) $("locLine").textContent="常用位置 · "+state.home.name;
+else {
+  $("locLine").textContent="未設定常用位置，請開定位或搜尋地點";
+  if($("gate")) $("gate").classList.add("on");
+  $("homeBtn").classList.remove("on");
+}
+function tickClock(){
+  var now=new Date();
+  var t=now.toLocaleTimeString("zh-HK",{hour:"2-digit",minute:"2-digit",second:"2-digit",hour12:false,timeZone:"Asia/Hong_Kong"});
+  var d=now.toLocaleDateString("zh-HK",{timeZone:"Asia/Hong_Kong",year:"numeric",month:"numeric",day:"numeric"});
+  var w=now.toLocaleDateString("zh-HK",{timeZone:"Asia/Hong_Kong",weekday:"long"});
+  if($("nowTime")) $("nowTime").textContent=t;
+  if($("nowDate")) $("nowDate").textContent=d+" · "+w;
+}
+tickClock();
+setInterval(tickClock,1000);
+loadCatalog().then(function(){ if(state.loc && state.items.length) refresh(); else paint(); });
+setInterval(function(){if(state.items.length) refresh();},15000);
+setInterval(function(){ if(state.cards&&state.cards.length) paint(); },10000);
 })();
 </script>
 </body>
