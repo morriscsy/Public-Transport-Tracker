@@ -45,9 +45,22 @@ h1{margin:2px 0 0;font-size:30px;letter-spacing:-.04em}
 .quick,.tabs{display:flex;gap:8px;overflow:auto;margin:10px 0;padding-bottom:2px}
 .quick button,.tabs button{border:1px solid rgba(255,255,255,.1);background:transparent;color:#fff;border-radius:999px;padding:7px 12px;white-space:nowrap;font-size:13px}
 .tabs button.on{background:#1e2330;color:#f0c36a;border-color:rgba(240,195,106,.4)}
-.tag{background:#1a1d27;border-radius:999px;padding:5px 8px 5px 6px;display:inline-flex;align-items:center;gap:6px;margin:0 6px 6px 0;font-size:14px;border:1px solid rgba(240,195,106,.35);cursor:pointer;-webkit-tap-highlight-color:transparent}
+.tagbar{display:flex;align-items:flex-start;gap:8px;flex-wrap:wrap}
+#tags{flex:1;min-width:0}
+.tag{background:#1a1d27;border-radius:999px;padding:5px 8px 5px 6px;display:inline-flex;align-items:center;gap:6px;margin:0 6px 6px 0;font-size:14px;border:1px solid rgba(240,195,106,.35);cursor:pointer;-webkit-tap-highlight-color:transparent;touch-action:manipulation;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
+.tag img,.tico,.tico img{pointer-events:none;-webkit-touch-callout:none;-webkit-user-select:none}
 .tag.dim{opacity:.38;border-color:rgba(255,255,255,.08);filter:grayscale(.7);background:#101218}
 .tag .x{border:0;background:transparent;color:#9a958b;font-size:16px;padding:0 2px 0 4px;line-height:1}
+#tags.editing{touch-action:none}
+#tags.editing .tag{animation:jiggle .28s ease-in-out infinite alternate;cursor:grab;touch-action:none}
+.tag .mv{display:none;border:0;background:#2a3140;color:#f0c36a;width:22px;height:22px;border-radius:50%;font-size:13px;line-height:22px;padding:0;font-weight:800}
+#tags.editing .tag .mv{display:inline-flex;align-items:center;justify-content:center}
+#tags.editing .tag:nth-child(2n){animation-delay:-.08s}
+#tags.editing .tag:nth-child(3n){animation-delay:-.16s}
+#tags.editing .tag.dragging{animation:none;opacity:.72;transform:scale(1.08);z-index:5;box-shadow:0 8px 18px rgba(0,0,0,.35)}
+@keyframes jiggle{0%{transform:rotate(-1.4deg)}100%{transform:rotate(1.4deg)}}
+#tagDone{display:none;border:0;background:#f0c36a;color:#1a1408;border-radius:999px;padding:6px 12px;font-size:13px;font-weight:750;margin:0 0 6px auto;flex:0 0 auto}
+#tagBar.editing #tagDone{display:inline-flex}
 .tag .tico{width:22px;height:22px;border-radius:7px;display:flex;align-items:center;justify-content:center}
 .tag .tico svg{width:14px;height:14px}
 .tag button{border:0;background:transparent;color:#9a958b;font-size:16px}
@@ -192,7 +205,10 @@ h1{margin:2px 0 0;font-size:30px;letter-spacing:-.04em}
 </form>
 <div class="toast" id="toast"></div>
 <ul id="suggest"></ul>
+<div class="tagbar" id="tagBar">
 <div id="tags"></div>
+<button id="tagDone" type="button">完成</button>
+</div>
 <div class="tabs" id="tabs">
 <button type="button" data-tab="kmb">九巴</button>
 <button type="button" data-tab="ctb">城巴</button>
@@ -230,7 +246,7 @@ var MTR_STATIONS=[{"c":"ADM","zh":"金鐘","en":"Admiralty","lat":22.27942,"lng"
 var MTR_BY={}; MTR_STATIONS.forEach(function(s){MTR_BY[s.c]=s;});
 var home=null;
 try{var h=JSON.parse(localStorage.getItem("savedHome")||"null"); if(h&&h.lat) home=h;}catch(e){}
-var state={loc:home?{lat:home.lat,lng:home.lng}:null,mode:home?"home":"none",home:home,items:[],tab:"all",kmbStops:{},kmbRoutes:{},ctbRoutes:{},busy:false,cards:[]};
+var state={loc:home?{lat:home.lat,lng:home.lng}:null,mode:home?"home":"none",home:home,items:[],tab:"all",kmbStops:{},kmbRoutes:{},ctbRoutes:{},busy:false,cards:[],editing:false};
 try{state.items=JSON.parse(localStorage.getItem("watchHistory")||"[]");}catch(e){}
 if(!Array.isArray(state.items)) state.items=[];
 function $(id){return document.getElementById(id);}
@@ -306,9 +322,17 @@ function tagIcon(it){
 function itemKey(it){return it.t+"|"+it.k;}
 function isOn(it){return it.on!==false;}
 function renderTags(){
-  $("tags").innerHTML=state.items.map(function(it,i){
-    return '<span class="tag'+(isOn(it)?"":" dim")+'" data-tog="'+i+'">'+tagIcon(it)+'<b>'+labelOf(it)+'</b><button class="x" type="button" data-del="'+i+'">×</button></span>';
+  var box=$("tags");
+  box.classList.toggle("editing", !!state.editing);
+  $("tagBar").classList.toggle("editing", !!state.editing);
+  box.innerHTML=state.items.map(function(it,i){
+    return '<span class="tag'+(isOn(it)?"":" dim")+'" data-tog="'+i+'" data-key="'+itemKey(it)+'"><button class="mv" type="button" data-mv="-1">‹</button>'+tagIcon(it)+'<b>'+labelOf(it)+'</b><button class="mv" type="button" data-mv="1">›</button><button class="x" type="button" data-del="'+i+'">×</button></span>';
   }).join("");
+}
+function setEditing(on){
+  state.editing=!!on;
+  renderTags();
+  if(on) toast("撳 ‹ › 調次序，完咗按完成",false);
 }
 function findMtr(q){
   var raw=String(q||"").trim(), u=norm(q), hits=[];
@@ -382,6 +406,7 @@ function bindLiveSearch(id){
 bindLiveSearch("locQ");
 bindLiveSearch("gateQ");
 $("suggest").addEventListener("click",function(e){var li=e.target.closest("li"); if(li) addItem(li.getAttribute("data-t"),li.getAttribute("data-k"));});
+$("tags").addEventListener("contextmenu",function(e){ e.preventDefault(); });
 $("tags").addEventListener("click",function(e){
   var del=e.target.closest("[data-del]");
   if(del){
@@ -390,12 +415,76 @@ $("tags").addEventListener("click",function(e){
     if(isNaN(x)) return;
     state.items.splice(x,1); persist(); renderTags(); refresh(); return;
   }
+  var mv=e.target.closest("[data-mv]");
+  if(mv){
+    e.preventDefault(); e.stopPropagation();
+    var tag=mv.closest("[data-tog]"); if(!tag) return;
+    var i=+tag.getAttribute("data-tog");
+    var dir=+mv.getAttribute("data-mv");
+    var j=i+dir;
+    if(isNaN(i)||j<0||j>=state.items.length) return;
+    var tmp=state.items[i]; state.items[i]=state.items[j]; state.items[j]=tmp;
+    persist(); renderTags(); paint(); return;
+  }
+  if(state.editing || state._suppressClick){ state._suppressClick=false; return; }
   var t=e.target.closest("[data-tog]"); if(!t) return;
   e.preventDefault();
   var it=state.items[+t.getAttribute("data-tog")]; if(!it) return;
   it.on=isOn(it)?false:true;
   persist(); renderTags(); paint();
 });
+(function(){
+  var holdT=null, startX=0, startY=0, dragEl=null, dragging=false;
+  function clearHold(){ if(holdT){clearTimeout(holdT); holdT=null;} }
+  function syncFromDom(){
+    var map={};
+    state.items.forEach(function(it){map[itemKey(it)]=it;});
+    var next=[];
+    [].forEach.call($("tags").querySelectorAll(".tag"),function(el){
+      var it=map[el.getAttribute("data-key")];
+      if(it) next.push(it);
+    });
+    if(next.length===state.items.length){ state.items=next; persist(); }
+  }
+  function onMove(e){
+    if(Math.abs(e.clientX-startX)+Math.abs(e.clientY-startY)>10) clearHold();
+    if(!dragEl || !state.editing) return;
+    e.preventDefault();
+    dragging=true; state._suppressClick=true;
+    dragEl.classList.add("dragging");
+    var over=document.elementFromPoint(e.clientX,e.clientY);
+    var other=over&&over.closest?over.closest("#tags .tag"):null;
+    if(!other || other===dragEl) return;
+    var box=$("tags");
+    var mid=other.getBoundingClientRect();
+    if(e.clientX<mid.left+mid.width/2 && e.clientY<mid.top+mid.height) box.insertBefore(dragEl, other);
+    else box.insertBefore(dragEl, other.nextSibling);
+  }
+  function onUp(){
+    clearHold();
+    document.removeEventListener("pointermove",onMove,true);
+    document.removeEventListener("pointerup",onUp,true);
+    document.removeEventListener("pointercancel",onUp,true);
+    if(dragEl) dragEl.classList.remove("dragging");
+    if(dragging){ syncFromDom(); paint(); }
+    dragEl=null; dragging=false;
+  }
+  $("tags").addEventListener("pointerdown",function(e){
+    var tag=e.target.closest(".tag"); if(!tag || e.target.closest("[data-del]")) return;
+    startX=e.clientX; startY=e.clientY; dragEl=tag; dragging=false;
+    clearHold();
+    document.addEventListener("pointermove",onMove,true);
+    document.addEventListener("pointerup",onUp,true);
+    document.addEventListener("pointercancel",onUp,true);
+    try{ tag.setPointerCapture(e.pointerId); }catch(err){}
+    holdT=setTimeout(function(){
+      holdT=null;
+      state._suppressClick=true;
+      if(!state.editing) setEditing(true);
+    },420);
+  },{passive:false});
+})();
+$("tagDone").addEventListener("click",function(){ setEditing(false); paint(); });
 function pickNearby(list){
   var byBound={}, out=[];
   list.filter(function(x){return x.dist<=HARD_CAP;}).forEach(function(x){
@@ -830,6 +919,7 @@ function mountCardMaps(cards){
   });
 }
 function refresh(){
+  if(state.editing) return;
   if(!state.loc){ say("請先設定常用位置或開啟定位"); return; }
   if(state.busy){state.needRefresh=true; return;}
   state.busy=true; renderTags();
