@@ -91,8 +91,9 @@ h1{margin:2px 0 0;font-size:24px;letter-spacing:-.03em;font-weight:750}
 .times.mini .big{font-size:20px;margin:6px 0 4px;line-height:1}
 .times.mini .lab{font-size:11px}
 .times.mini .clk{font-size:12px}
-.cardmap{position:relative;height:168px;width:100%;border-radius:14px;overflow:hidden;margin-top:10px;background:#1c2128;touch-action:none;z-index:1}
-.cardmap canvas,.cardmap .maplibregl-canvas{touch-action:none !important}
+.cardmap{position:relative;height:168px;width:100%;border-radius:14px;overflow:hidden;margin-top:10px;background:#1c2128;touch-action:none;z-index:2;-webkit-user-select:none;overscroll-behavior:contain}
+.cardmap *{touch-action:none}
+.cardmap .maplibregl-canvas{pointer-events:auto}
 .cardmap .maplibregl-ctrl-attrib,.cardmap .maplibregl-ctrl-logo{display:none}
 .cardmap canvas{image-rendering:auto}
 .flip{transform:scaleX(-1);transform-origin:center}
@@ -1201,18 +1202,24 @@ function samplePts(pts,max){
 function roadLine(pts){
   pts=(pts||[]).filter(function(p){return p&&isFinite(p.lat)&&isFinite(p.lng);});
   if(pts.length<2) return Promise.resolve(pts);
-  var sampled=samplePts(pts,10);
+  var sampled=samplePts(pts,16);
   var key=sampled.map(function(p){return p.lat.toFixed(4)+","+p.lng.toFixed(4);}).join("|");
   if(roadCache[key]) return Promise.resolve(roadCache[key]);
-  var qs=sampled.map(function(p){return p.lng+","+p.lat;}).join(";");
-  return fetch("https://router.project-osrm.org/route/v1/driving/"+qs+"?overview=full&geometries=geojson")
-    .then(function(r){return r.json();})
-    .then(function(j){
+  var jobs=[], i;
+  for(i=0;i<sampled.length-1;i+=6){
+    var chunk=sampled.slice(i, Math.min(sampled.length, i+7));
+    jobs.push(fetch("https://router.project-osrm.org/route/v1/driving/"+chunk.map(function(p){return p.lng+","+p.lat;}).join(";")+"?overview=full&geometries=geojson").then(function(r){return r.json();}).then(function(j){
       var coords=j.routes&&j.routes[0]&&j.routes[0].geometry&&j.routes[0].geometry.coordinates;
-      var line=coords&&coords.length>1?coords.map(function(c){return {lng:c[0],lat:c[1]};}):pts;
-      roadCache[key]=line;
-      return line;
-    }).catch(function(){return pts;});
+      return coords?coords.map(function(c){return {lng:c[0],lat:c[1]};}):[];
+    }).catch(function(){return [];}));
+  }
+  return Promise.all(jobs).then(function(parts){
+    var line=[];
+    parts.forEach(function(seg){ seg.forEach(function(p){ if(!line.length||line[line.length-1].lat!==p.lat||line[line.length-1].lng!==p.lng) line.push(p); }); });
+    if(line.length<2) line=pts;
+    roadCache[key]=line;
+    return line;
+  });
 }
 function applyRoad(map,passed,upcoming){
   Promise.all([roadLine(passed), roadLine(upcoming)]).then(function(arr){
@@ -1284,17 +1291,16 @@ function mountCardMaps(cards){
       dragRotate:false,
       touchZoomRotate:true,
       touchPitch:false,
-      cooperativeGestures:false,
-      pitchWithRotate:false,
+            pitchWithRotate:false,
       pixelRatio:Math.min(window.devicePixelRatio||2, 3)
     });
-    map.dragPan.enable();
-    map.touchZoomRotate.enable();
-    map.scrollZoom.enable();
-    el.addEventListener("touchmove", function(e){ e.preventDefault(); }, {passive:false});
+    if(map.dragPan) map.dragPan.enable();
+    if(map.touchZoomRotate){ map.touchZoomRotate.enable(); map.touchZoomRotate.disableRotation(); }
+    if(map.scrollZoom) map.scrollZoom.enable();
+    el.addEventListener("touchstart", function(e){ e.stopPropagation(); }, {passive:true});
     map.on("load",function(){
       tuneMap(map);
-      try{ map.resize(); map.dragPan.enable(); map.touchZoomRotate.enable(); }catch(e){}
+      try{ map.resize(); map.dragPan.enable(); map.touchZoomRotate.enable(); map.touchZoomRotate.disableRotation(); }catch(e){}
       if(path.length>1 || (c.ahead&&c.ahead.length>1)){
         map._flowPath=parts0.upcoming;
         map.addSource("passed",{type:"geojson",data:lineOf(parts0.passed)});
