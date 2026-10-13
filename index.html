@@ -6,8 +6,8 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#07080c">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
-<title>刻到 HAKDOU</title>
-<meta name="apple-mobile-web-app-title" content="刻到">
+<title>StationWise</title>
+<meta name="apple-mobile-web-app-title" content="StationWise">
 <style>
 *{box-sizing:border-box}
 html,body{margin:0;background:#07080c;color:#f7f4ee;font-family:-apple-system,BlinkMacSystemFont,"PingFang HK","Noto Sans TC",sans-serif}
@@ -22,7 +22,7 @@ html,body{margin:0;background:#07080c;color:#f7f4ee;font-family:-apple-system,Bl
   100%{transform:rotateY(-18deg) rotateX(12deg) translateY(0)}
 }
 .kicker{margin:0;color:#f0c36a;letter-spacing:.16em;font-size:10px}
-h1{margin:2px 0 0;font-size:30px;letter-spacing:-.04em}
+h1{margin:2px 0 0;font-size:24px;letter-spacing:-.03em;font-weight:750}
 .nowbox{margin-left:auto;text-align:right}
 .now-time{font-size:22px;font-weight:750;letter-spacing:-.03em;line-height:1;font-variant-numeric:tabular-nums}
 .now-date{margin-top:3px;color:#9a958b;font-size:11px}
@@ -176,8 +176,8 @@ h1{margin:2px 0 0;font-size:30px;letter-spacing:-.04em}
     </div>
   </div>
   <div>
-    <p class="kicker">HAKDOU</p>
-    <h1>刻到</h1>
+    <p class="kicker">NEARBY TRANSIT</p>
+    <h1>StationWise</h1>
   </div>
   <div class="nowbox">
     <div class="now-time" id="nowTime">--:--</div>
@@ -185,10 +185,10 @@ h1{margin:2px 0 0;font-size:30px;letter-spacing:-.04em}
   </div>
 </div>
 <div class="topbar">
-<p class="sub" id="locLine">未設定常用位置</p>
+<p class="sub" id="locLine">正在開啟定位…</p>
 <div class="row">
-<button class="ghost" id="gpsBtn" type="button">開啟定位</button>
-<button class="ghost on" id="homeBtn" type="button">我的常用位置</button>
+<button class="ghost on" id="gpsBtn" type="button">開啟定位</button>
+<button class="ghost" id="homeBtn" type="button">我的常用位置</button>
 </div>
 <div class="panel" id="locPanel">
 <form class="locbox" id="locForm" action="#">
@@ -222,8 +222,8 @@ h1{margin:2px 0 0;font-size:30px;letter-spacing:-.04em}
 </div>
 <div class="gate" id="gate">
   <div class="gatebox">
-    <h2>先設定常用位置</h2>
-    <p>第一次使用請搜尋屋苑／地標／車站，或開啟定位。資料只存在你部裝置，其他人睇唔到。</p>
+    <h2>允許定位</h2>
+    <p>預設使用你而家嘅位置。允許定位後即可睇附近到站。常用位置係備用，可稍後再設。</p>
     <form class="locbox" id="gateForm" action="#">
       <input id="gateQ" type="search" placeholder="例如 中環、彩虹站、太古城" autocomplete="off">
       <button type="submit">搜尋</button>
@@ -246,7 +246,7 @@ var MTR_STATIONS=[{"c":"ADM","zh":"金鐘","en":"Admiralty","lat":22.27942,"lng"
 var MTR_BY={}; MTR_STATIONS.forEach(function(s){MTR_BY[s.c]=s;});
 var home=null;
 try{var h=JSON.parse(localStorage.getItem("savedHome")||"null"); if(h&&h.lat) home=h;}catch(e){}
-var state={loc:home?{lat:home.lat,lng:home.lng}:null,mode:home?"home":"none",home:home,items:[],tab:"all",kmbStops:{},kmbRoutes:{},ctbRoutes:{},busy:false,cards:[],editing:false};
+var state={loc:null,mode:"gps",home:home,items:[],tab:"all",kmbStops:{},kmbRoutes:{},ctbRoutes:{},busy:false,cards:[],editing:false};
 try{state.items=JSON.parse(localStorage.getItem("watchHistory")||"[]");}catch(e){}
 if(!Array.isArray(state.items)) state.items=[];
 function $(id){return document.getElementById(id);}
@@ -275,9 +275,11 @@ function clock(iso){
   return d.toLocaleTimeString("zh-HK",{hour:"2-digit",minute:"2-digit",hour12:false});
 }
 function persist(){try{localStorage.setItem("watchHistory",JSON.stringify(state.items));}catch(e){}}
-function saveHome(h){
-  state.home=h; state.loc={lat:h.lat,lng:h.lng}; state.mode="home";
+function saveHome(h, silent){
+  state.home=h;
   try{localStorage.setItem("savedHome",JSON.stringify(h));}catch(e){}
+  if(silent) return;
+  state.loc={lat:h.lat,lng:h.lng}; state.mode="home";
   $("homeBtn").classList.add("on"); $("gpsBtn").classList.remove("on");
   $("locLine").textContent="常用位置 · "+h.name;
   $("locPanel").classList.remove("on");
@@ -540,10 +542,11 @@ function applyGps(pos){
   state.mode="gps";
   $("gpsBtn").classList.add("on"); $("homeBtn").classList.remove("on");
   $("locPanel").classList.remove("on");
+  if($("gate")) $("gate").classList.remove("on");
   $("locLine").textContent="已用即時定位 · 讀取地名中";
   nameFromCoords(state.loc.lat,state.loc.lng,function(n){
     $("locLine").textContent="已用即時定位 · "+n;
-    if(!state.home) saveHome({name:n,lat:state.loc.lat,lng:state.loc.lng});
+    if(!state.home) saveHome({name:n,lat:state.loc.lat,lng:state.loc.lng}, true);
   });
   say("定位成功");
   refresh();
@@ -1009,12 +1012,9 @@ function refresh(){
   }).then(function(){state.busy=false; if(state.needRefresh){state.needRefresh=false; refresh();}});
 }
 renderTags();
-if(state.home) $("locLine").textContent="常用位置 · "+state.home.name;
-else {
-  $("locLine").textContent="未設定常用位置，請開定位或搜尋地點";
-  if($("gate")) $("gate").classList.add("on");
-  $("homeBtn").classList.remove("on");
-}
+$("gpsBtn").classList.add("on"); $("homeBtn").classList.remove("on");
+$("locLine").textContent="正在開啟定位…";
+if($("gate")) $("gate").classList.remove("on");
 function tickClock(){
   var now=new Date();
   var t=now.toLocaleTimeString("zh-HK",{hour:"2-digit",minute:"2-digit",second:"2-digit",hour12:false,timeZone:"Asia/Hong_Kong"});
@@ -1025,7 +1025,7 @@ function tickClock(){
 }
 tickClock();
 setInterval(tickClock,1000);
-loadCatalog().then(function(){ renderTags(); if(state.loc && state.items.length) refresh(); else paint(); });
+loadCatalog().then(function(){ renderTags(); useGps(); });
 setInterval(function(){if(state.items.length) refresh();},15000);
 setInterval(function(){ if(state.cards&&state.cards.length) paint(); },10000);
 })();
