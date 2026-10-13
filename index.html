@@ -123,7 +123,6 @@ h1{margin:2px 0 0;font-size:24px;letter-spacing:-.03em;font-weight:750}
 .topbar .row{margin-bottom:10px}
 @media (min-width:740px){
   .regions button{flex:0 1 auto;max-width:none}
-}
   .app{max-width:1100px;padding:16px 24px 40px}
   .brand{margin-bottom:6px}
   .topbar{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;margin-bottom:10px}
@@ -961,11 +960,9 @@ function paint(){
     var live=c.etas.some(function(e){return e&&!e.sched;});
     var col=c.kind==="mtr"?(LINE_COLOR[c.line]||"#0d6b4c"):"";
     var title=c.kind==="mtr"?c.name:c.route;
-    var rk=cardRegion(c);
-    var badge='<span class="rchip">'+regionLabel(rk)+'</span>';
     var sub=c.kind==="mtr"
-      ? '<span class="linechip" style="background:'+col+'">'+c.route+'</span>'+badge+'<div class="meta">'+c.dist+'米</div>'
-      : '<div class="to">往 <b>'+dest+'</b> '+badge+'</div><div class="meta">'+c.coName+' · '+c.dist+'米</div><div class="stopn">'+c.name+'</div>';
+      ? '<span class="linechip" style="background:'+col+'">'+c.route+'</span><div class="meta">'+c.dist+'米</div>'
+      : '<div class="to">往 <b>'+dest+'</b></div><div class="meta">'+c.coName+' · '+c.dist+'米</div><div class="stopn">'+c.name+'</div>';
     var mid=c.kind==="bus"?"map"+(mapN++):"";
     return '<article class="card"><div class="cardhead"><div class="cardmain"><div class="namerow">'+icon(c.kind==="mtr"?"mtr":c.co,c.line)+'<div class="bus">'+title+'</div></div>'+sub+
       (c.kind==="mtr"?'<div class="to">往 <b>'+dest+'</b></div>':'')+'</div>'+
