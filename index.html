@@ -198,7 +198,7 @@ h1{margin:2px 0 0;font-size:24px;letter-spacing:-.03em;font-weight:750}
 <button type="submit">搜尋</button>
 </form>
 <ul id="locSuggest"></ul>
-<p class="hint">搜尋香港地址／屋苑／車站後儲存做常用位置。定位要用 Safari，並允許「位置」。</p>
+<p class="hint">輸入中文或英文屋苑／街道／地標，會即時列出建議，揀一個儲存。定位要用 Safari，並允許「位置」。</p>
 </div>
 <form id="searchForm" class="search" action="#">
 <input id="q" type="text" placeholder="" autocomplete="off">
@@ -600,7 +600,7 @@ function showPlaces(out,live){
   if(!out.length){
     boxes.forEach(function(box){box.style.display="none";});
     if(!live){
-      toast("搵唔到呢個地點，試中文或英文屋苑名，例如 麗晶花園／Richland",true);
+      toast("搵唔到呢個地點，試中文或英文屋苑／街道名",true);
       say("搵唔到呢個地點");
     }
     return;
@@ -608,7 +608,7 @@ function showPlaces(out,live){
   boxes.forEach(function(box){
     box.style.display="block";
     box._places=out;
-    box.innerHTML=out.slice(0,8).map(function(p,i){
+    box.innerHTML=out.slice(0,10).map(function(p,i){
       var sub=[p.en&&p.en!==p.name?p.en:"",p.hint||""].filter(Boolean).join(" · ");
       return '<li data-i="'+i+'"><strong>'+p.name+'</strong><small>'+sub+'</small></li>';
     }).join("");
@@ -635,27 +635,74 @@ function localPlaces(q){
   return out;
 }
 function inHK(lat,lng){return lat>22.12&&lat<22.58&&lng>113.75&&lng<114.52;}
+function alsItem(a){
+  var chi=(a.ChiPremisesAddress)||{};
+  var eng=(a.EngPremisesAddress)||{};
+  var geo=(a.GeospatialInformation)||{};
+  var lat=Number(geo.Latitude), lng=Number(geo.Longitude);
+  if(!inHK(lat,lng)) return null;
+  var estate=(chi.ChiEstate&&chi.ChiEstate.EstateName)||"";
+  var bldg=chi.BuildingName||"";
+  var street=(chi.ChiStreet&&chi.ChiStreet.StreetName)||"";
+  var no=(chi.ChiStreet&&chi.ChiStreet.BuildingNoFrom)||"";
+  var dist=(chi.ChiDistrict&&chi.ChiDistrict.DcDistrict)||"";
+  var enEstate=(eng.EngEstate&&eng.EngEstate.EstateName)||"";
+  var enBldg=eng.BuildingName||"";
+  var name=estate||bldg||(no?street+" "+no:street)||"地點";
+  if(estate && bldg && bldg!==estate) name=estate+" · "+bldg;
+  var hint=[no?street+" "+no:street, dist, enEstate||enBldg].filter(Boolean).join(" · ");
+  return {name:name,en:enEstate||enBldg,lat:lat,lng:lng,hint:hint||"地址"};
+}
+function uniqPlaces(list){
+  var seen={}, out=[];
+  list.forEach(function(p){
+    if(!p||!p.lat||!p.lng) return;
+    var k=p.name+"|"+Math.round(p.lat*200)+"|"+Math.round(p.lng*200);
+    if(seen[k]) return; seen[k]=1; out.push(p);
+  });
+  return out;
+}
 function searchPlace(q,opt){
   opt=opt||{};
   q=String(q||"").trim();
-  if(!q){ if(!opt.live) toast("請輸入屋苑、地標或車站",true); return; }
+  if(!q){ if(!opt.live) toast("請輸入屋苑、地標或街道",true); return; }
   var local=localPlaces(q);
   if(local.length) showPlaces(local,true);
   else if(!opt.live) say("搜尋地點中…");
-  var url="https://photon.komoot.io/api/?limit=8&lang=en&bbox=113.8,22.15,114.45,22.58&q="+encodeURIComponent(q);
-  fetch(url).then(function(r){return r.json();}).then(function(j){
-    (j.features||[]).forEach(function(f){
-      var c=f.geometry&&f.geometry.coordinates; if(!c) return;
-      if(!inHK(c[1],c[0])) return;
-      var p=f.properties||{};
-      var name=p.name||q;
-      var hint=[p.street,p.district,p.city].filter(Boolean).join(" · ");
-      local.push({name:name,en:p.name,lat:c[1],lng:c[0],hint:hint||"地圖搜尋"});
+  var seq=(state.placeSeq=(state.placeSeq||0)+1);
+  var als="https://www.als.gov.hk/lookup?n=12&q="+encodeURIComponent(q);
+  fetch(als,{headers:{Accept:"application/json"}}).then(function(r){return r.json();}).then(function(j){
+    if(seq!==state.placeSeq) return;
+    var out=local.slice();
+    ((j&&j.SuggestedAddress)||[]).forEach(function(s){
+      var item=alsItem(s.Address&&s.Address.PremisesAddress);
+      if(item) out.push(item);
     });
-    var seen={}, out=[];
-    local.forEach(function(p){var k=p.name+Math.round(p.lat*400); if(seen[k])return; seen[k]=1; out.push(p);});
-    showPlaces(out,opt.live);
-  }).catch(function(){ showPlaces(local,opt.live); });
+    out=uniqPlaces(out);
+    if(out.length>=4){ showPlaces(out,opt.live); return; }
+    var photon="https://photon.komoot.io/api/?limit=6&lang=en&bbox=113.8,22.15,114.45,22.58&q="+encodeURIComponent(q);
+    return fetch(photon).then(function(r){return r.json();}).then(function(pj){
+      if(seq!==state.placeSeq) return;
+      (pj.features||[]).forEach(function(f){
+        var c=f.geometry&&f.geometry.coordinates; if(!c||!inHK(c[1],c[0])) return;
+        var p=f.properties||{};
+        out.push({name:p.name||q,en:p.name,lat:c[1],lng:c[0],hint:[p.street,p.district,p.city].filter(Boolean).join(" · ")||"地圖"});
+      });
+      showPlaces(uniqPlaces(out),opt.live);
+    });
+  }).catch(function(){
+    if(seq!==state.placeSeq) return;
+    var photon="https://photon.komoot.io/api/?limit=8&lang=en&bbox=113.8,22.15,114.45,22.58&q="+encodeURIComponent(q);
+    fetch(photon).then(function(r){return r.json();}).then(function(j){
+      var out=local.slice();
+      (j.features||[]).forEach(function(f){
+        var c=f.geometry&&f.geometry.coordinates; if(!c||!inHK(c[1],c[0])) return;
+        var p=f.properties||{};
+        out.push({name:p.name||q,en:p.name,lat:c[1],lng:c[0],hint:[p.street,p.district,p.city].filter(Boolean).join(" · ")||"地圖"});
+      });
+      showPlaces(uniqPlaces(out),opt.live);
+    }).catch(function(){ showPlaces(local,opt.live); });
+  });
 }
 function pickPlace(box,e){
   var li=e.target.closest("li"); if(!li||!box) return;
