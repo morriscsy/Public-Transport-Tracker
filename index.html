@@ -100,7 +100,7 @@ h1{margin:2px 0 0;font-size:24px;letter-spacing:-.03em;font-weight:750}
 .flowdot{width:8px;height:8px;border-radius:50%;background:#eafff6;box-shadow:0 0 6px 3px rgba(125,255,194,.95),0 0 14px 6px rgba(125,255,194,.55);pointer-events:none}
 .veh{width:26px;height:66px;transform-origin:50% 50%;filter:drop-shadow(0 6px 6px rgba(0,0,0,.45))}
 .veh svg{display:block;overflow:visible}
-.herepin{position:absolute;left:8px;bottom:8px;z-index:500;max-width:78%;background:rgba(12,14,18,.82);border:1px solid rgba(240,195,106,.4);color:#f7f4ee;font-size:11px;font-weight:650;padding:6px 8px;border-radius:10px;line-height:1.35;pointer-events:none}
+.herepin{position:absolute;left:8px;bottom:8px;z-index:12;max-width:78%;background:rgba(12,14,18,.82);border:1px solid rgba(240,195,106,.4);color:#f7f4ee;font-size:11px;font-weight:650;padding:6px 8px;border-radius:10px;line-height:1.35;pointer-events:none}
 .herepin b{color:#f0c36a}
 .youdot{width:14px;height:14px;border-radius:50%;background:#4da3ff;border:3px solid #fff;box-shadow:0 0 0 6px rgba(77,163,255,.25)}
 #suggest li{display:flex;align-items:center;gap:10px}
@@ -1267,39 +1267,42 @@ function updateLiveMap(map,c){
   }catch(e){}
 }
 function bindMapTouch(map, el){
-  if(el._touchBound) return;
-  el._touchBound=1;
-  el.style.cursor="grab";
+  var pad=el.querySelector(".mappad");
+  if(!pad){
+    pad=document.createElement("div");
+    pad.className="mappad";
+    pad.style.cssText="position:absolute;inset:0;z-index:8;cursor:grab;background:transparent;touch-action:none";
+    el.appendChild(pad);
+  }
+  if(pad._bound) return;
+  pad._bound=1;
   var last=null, dist0=0, zoom0=0, mouse=false;
-  el.addEventListener("mousedown", function(e){
+  pad.addEventListener("mousedown", function(e){
     if(e.button!==0) return;
     mouse=true; last={x:e.clientX,y:e.clientY};
-    el.style.cursor="grabbing";
-    e.preventDefault();
+    pad.style.cursor="grabbing";
+    e.preventDefault(); e.stopPropagation();
   });
   window.addEventListener("mousemove", function(e){
     if(!mouse||!last) return;
     map.panBy([last.x-e.clientX, last.y-e.clientY], {animate:false});
     last={x:e.clientX,y:e.clientY};
-  });
-  window.addEventListener("mouseup", function(){ mouse=false; last=null; el.style.cursor="grab"; });
-  el.addEventListener("wheel", function(e){
     e.preventDefault();
-    map.zoomTo(Math.max(11, Math.min(18, map.getZoom()+(e.deltaY<0?0.4:-0.4))), {animate:false});
+  });
+  window.addEventListener("mouseup", function(){ mouse=false; last=null; pad.style.cursor="grab"; });
+  pad.addEventListener("wheel", function(e){
+    e.preventDefault(); e.stopPropagation();
+    map.zoomTo(Math.max(11, Math.min(18, map.getZoom()+(e.deltaY<0?0.5:-0.5))), {animate:false});
   }, {passive:false});
-  el.addEventListener("touchstart", function(e){
-    if(e.touches.length===1){
-      last={x:e.touches[0].clientX,y:e.touches[0].clientY};
-      dist0=0;
-    } else if(e.touches.length>=2){
+  pad.addEventListener("touchstart", function(e){
+    if(e.touches.length===1){ last={x:e.touches[0].clientX,y:e.touches[0].clientY}; dist0=0; }
+    else if(e.touches.length>=2){
       dist0=Math.hypot(e.touches[0].clientX-e.touches[1].clientX, e.touches[0].clientY-e.touches[1].clientY);
-      zoom0=map.getZoom();
-      last=null;
+      zoom0=map.getZoom(); last=null;
     }
   }, {passive:true});
-  el.addEventListener("touchmove", function(e){
-    if(!e.touches.length) return;
-    e.preventDefault();
+  pad.addEventListener("touchmove", function(e){
+    e.preventDefault(); e.stopPropagation();
     if(e.touches.length===1 && last){
       var x=e.touches[0].clientX, y=e.touches[0].clientY;
       map.panBy([last.x-x, last.y-y], {animate:false});
@@ -1309,7 +1312,7 @@ function bindMapTouch(map, el){
       map.zoomTo(Math.max(11, Math.min(18, zoom0+Math.log2(d/dist0))), {animate:false});
     }
   }, {passive:false});
-  el.addEventListener("touchend", function(){ last=null; }, {passive:true});
+  pad.addEventListener("touchend", function(){ last=null; }, {passive:true});
 }
 function mountCardMaps(cards){
   flowGen++;
