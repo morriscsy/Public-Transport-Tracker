@@ -1171,7 +1171,6 @@ function updateLiveMap(map,c){
     var pin=map.getContainer().querySelector(".herepin");
     if(pin) pin.innerHTML=nearHint(path,pos,c.name);
     setRouteParts(map,path,prog);
-    map.easeTo({center:[pos.lng,pos.lat],duration:600});
   }catch(e){}
 }
 function mountCardMaps(cards){
@@ -1194,7 +1193,9 @@ function mountCardMaps(cards){
       center:[pos.lng,pos.lat],
       zoom:13.6,
       attributionControl:false,
+      dragPan:true,
       dragRotate:false,
+      touchZoomRotate:true,
       pitchWithRotate:false,
       pixelRatio:Math.min(window.devicePixelRatio||2, 3)
     });
