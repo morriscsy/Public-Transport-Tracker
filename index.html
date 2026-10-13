@@ -50,6 +50,8 @@ h1{margin:2px 0 0;font-size:24px;letter-spacing:-.03em;font-weight:750}
 .tag{background:#1a1d27;border-radius:999px;padding:5px 8px 5px 6px;display:inline-flex;align-items:center;gap:6px;margin:0 6px 6px 0;font-size:14px;border:1px solid rgba(240,195,106,.35);cursor:pointer;-webkit-tap-highlight-color:transparent;touch-action:manipulation;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
 .tag img,.tico,.tico img{pointer-events:none;-webkit-touch-callout:none;-webkit-user-select:none}
 .tag.dim{opacity:.38;border-color:rgba(255,255,255,.08);filter:grayscale(.7);background:#101218}
+.tag.glow{opacity:1;filter:none;border-color:#7dffc2;background:#14261d;animation:glowpulse 1.5s ease-in-out infinite}
+@keyframes glowpulse{0%,100%{box-shadow:0 0 0 1px rgba(125,255,194,.45),0 0 8px rgba(125,255,194,.4)}50%{box-shadow:0 0 0 1px rgba(125,255,194,.95),0 0 16px rgba(125,255,194,.8)}}
 .tag .x{border:0;background:transparent;color:#9a958b;font-size:16px;padding:0 2px 0 4px;line-height:1}
 #tags.editing{touch-action:none}
 #tags.editing .tag{animation:jiggle .28s ease-in-out infinite alternate;cursor:grab;touch-action:none}
@@ -323,12 +325,20 @@ function tagIcon(it){
 }
 function itemKey(it){return it.t+"|"+it.k;}
 function isOn(it){return it.on!==false;}
+function hasNearby(it){
+  if(!state.available) return false;
+  var k=it.t==="bus"?("bus|"+String(it.k).toUpperCase()):("mtr|"+it.k);
+  return !!state.available[k];
+}
 function renderTags(){
   var box=$("tags");
   box.classList.toggle("editing", !!state.editing);
   $("tagBar").classList.toggle("editing", !!state.editing);
   box.innerHTML=state.items.map(function(it,i){
-    return '<span class="tag'+(isOn(it)?"":" dim")+'" data-tog="'+i+'" data-key="'+itemKey(it)+'"><button class="mv" type="button" data-mv="-1">‹</button>'+tagIcon(it)+'<b>'+labelOf(it)+'</b><button class="mv" type="button" data-mv="1">›</button><button class="x" type="button" data-del="'+i+'">×</button></span>';
+    var cls="";
+    if(!isOn(it)) cls+=" dim";
+    if(!isOn(it) && hasNearby(it)) cls+=" glow";
+    return '<span class="tag'+cls+'" data-tog="'+i+'" data-key="'+itemKey(it)+'"><button class="mv" type="button" data-mv="-1">‹</button>'+tagIcon(it)+'<b>'+labelOf(it)+'</b><button class="mv" type="button" data-mv="1">›</button><button class="x" type="button" data-del="'+i+'">×</button></span>';
   }).join("");
 }
 function setEditing(on){
@@ -1005,6 +1015,17 @@ function refresh(){
       }
       return firstMin(a)-firstMin(b);
     });
+    var available={};
+    cards.forEach(function(c){
+      if(c.kind==="bus") available["bus|"+String(c.route).toUpperCase()]=1;
+      if(c.kind==="mtr") available["mtr|"+c.stopId]=1;
+    });
+    state.available=available;
+    var changed=false;
+    state.items.forEach(function(it){
+      if(isOn(it) && !hasNearby(it)){ it.on=false; changed=true; }
+    });
+    if(changed) persist();
     state.cards=cards; renderTags(); paint();
     say("已更新 "+new Date().toLocaleTimeString("zh-HK",{hour12:false})+" · 只顯示完整分鐘");
   }).catch(function(){
