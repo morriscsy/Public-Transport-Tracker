@@ -51,10 +51,11 @@ h1{margin:2px 0 0;font-size:24px;letter-spacing:-.03em;font-weight:750}
 .rchip{display:inline-block;margin-left:6px;font-size:10px;font-weight:700;color:#7dffc2;background:rgba(125,255,194,.12);border:1px solid rgba(125,255,194,.35);border-radius:999px;padding:1px 6px;vertical-align:middle}
 .tagbar{display:flex;align-items:flex-start;gap:8px;flex-wrap:wrap}
 #tags{flex:1;min-width:0}
-.tag{background:#1a1d27;border-radius:999px;padding:5px 8px 5px 6px;display:inline-flex;align-items:center;gap:6px;margin:0 6px 6px 0;font-size:14px;border:1px solid rgba(240,195,106,.35);cursor:pointer;-webkit-tap-highlight-color:transparent;touch-action:manipulation;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
+.tag{background:#1a1d27;border-radius:999px;padding:5px 8px 5px 6px;display:inline-flex;align-items:center;gap:6px;margin:0 6px 6px 0;font-size:14px;border:1px solid rgba(240,195,106,.35);cursor:pointer;-webkit-tap-highlight-color:transparent;touch-action:manipulation;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;color:#fff}
 .tag img,.tico,.tico img{pointer-events:none;-webkit-touch-callout:none;-webkit-user-select:none}
-.tag.dim{opacity:.38;border-color:rgba(255,255,255,.08);filter:grayscale(.7);background:#101218}
-.tag.glow{opacity:1;filter:none;border-color:#7dffc2;background:#14261d;animation:glowpulse 1.5s ease-in-out infinite}
+.tag.dim{opacity:.34;border-color:rgba(255,255,255,.08);filter:grayscale(.7);background:#101218;color:#8a857c}
+.tag.glow{opacity:1;filter:none;border-color:#7dffc2;background:#14261d;animation:glowpulse 1.5s ease-in-out infinite;color:#b7c9be}
+.tag.glow .tico{opacity:.78}
 @keyframes glowpulse{0%,100%{box-shadow:0 0 0 1px rgba(125,255,194,.45),0 0 8px rgba(125,255,194,.4)}50%{box-shadow:0 0 0 1px rgba(125,255,194,.95),0 0 16px rgba(125,255,194,.8)}}
 .tag .x{border:0;background:transparent;color:#9a958b;font-size:16px;padding:0 2px 0 4px;line-height:1}
 #tags.editing{touch-action:none}
