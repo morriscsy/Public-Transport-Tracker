@@ -1073,20 +1073,30 @@ function tuneMap(map){
     try{ map.setPaintProperty("background","background-color","#eceeed"); }catch(e){}
   }
 }
+function pathLength(path){
+  var tot=0;
+  for(var i=1;i<path.length;i++) tot+=dist(path[i-1].lat,path[i-1].lng,path[i].lat,path[i].lng);
+  return tot;
+}
 function startParticles(map,path,gen){
-  var n=8, dots=[];
+  var total=Math.max(pathLength(path),1);
+  var speed=140;
+  var gap=Math.max(90, Math.min(220, total/7));
+  var n=Math.max(4, Math.min(10, Math.round(total/gap)));
+  var dots=[];
   for(var i=0;i<n;i++){
     var d=document.createElement("div");
     d.className="flowdot";
     var m=new maplibregl.Marker({element:d,anchor:"center"}).setLngLat([path[0].lng,path[0].lat]).addTo(map);
-    dots.push({m:m,t:i/n});
+    dots.push({m:m,t:(i/n)});
   }
   var last=performance.now();
   function tick(now){
     if(gen!==flowGen) return;
     var dt=Math.min(0.05,(now-last)/1000); last=now;
+    var step=(speed*dt)/total;
     dots.forEach(function(o){
-      o.t=(o.t+dt*0.14)%1;
+      o.t=(o.t+step)%1;
       var pt=alongPath(path,o.t);
       if(pt) o.m.setLngLat([pt.lng,pt.lat]);
     });
