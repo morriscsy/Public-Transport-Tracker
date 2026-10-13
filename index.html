@@ -91,7 +91,7 @@ h1{margin:2px 0 0;font-size:24px;letter-spacing:-.03em;font-weight:750}
 .times.mini .big{font-size:20px;margin:6px 0 4px;line-height:1}
 .times.mini .lab{font-size:11px}
 .times.mini .clk{font-size:12px}
-.cardmap{position:relative;height:168px;width:100%;border-radius:14px;overflow:hidden;margin-top:10px;background:#1c2128}
+.cardmap{position:relative;height:168px;width:100%;border-radius:14px;overflow:hidden;margin-top:10px;background:#1c2128;touch-action:none}
 .cardmap .maplibregl-ctrl-attrib,.cardmap .maplibregl-ctrl-logo{display:none}
 .cardmap canvas{image-rendering:auto}
 .flip{transform:scaleX(-1);transform-origin:center}
@@ -841,7 +841,14 @@ function kmbNearby(route){
           var d=dist(state.loc.lat,state.loc.lng,Number(stop.lat),Number(stop.long));
           var key=rs.stop+"-"+p.v.bound; if(seen[key]) return; seen[key]=1;
           path.push({lat:Number(stop.lat),lng:Number(stop.long),name:stop.name_tc||stop.name_en||""});
-          all.push({kind:"bus",co:"KMB",coName:"九巴／龍運",route:route,stopId:rs.stop,name:stop.name_tc,nameEn:stop.name_en,lat:Number(stop.lat),lng:Number(stop.long),path:path.slice(-28),dist:Math.round(d),bound:p.v.bound,serviceType:String(p.v.service_type||"1"),orig:p.v.orig_tc||"",dest:p.v.dest_tc||""});
+          all.push({kind:"bus",co:"KMB",coName:"九巴／龍運",route:route,stopId:rs.stop,name:stop.name_tc,nameEn:stop.name_en,lat:Number(stop.lat),lng:Number(stop.long),path:path.slice(-12),ahead:[],dist:Math.round(d),bound:p.v.bound,serviceType:String(p.v.service_type||"1"),orig:p.v.orig_tc||"",dest:p.v.dest_tc||"",_full:path});
+        });
+        all.forEach(function(item){
+          if(item._full!==path) return;
+          var idx=path.findIndex(function(s){return s.lat===item.lat&&s.lng===item.lng;});
+          item.ahead=idx>=0?path.slice(idx):[{lat:item.lat,lng:item.lng,name:item.name}];
+          item.path=path.slice(Math.max(0,idx-10), idx+1);
+          delete item._full;
         });
       });
       all.sort(function(a,b){return a.dist-b.dist;});
@@ -870,7 +877,14 @@ function ctbNearby(route){
             var d=dist(state.loc.lat,state.loc.lng,Number(stop.lat),Number(stop.long));
             var key=rs.stop+"-"+bound; if(seen[key]) return; seen[key]=1;
             path.push({lat:Number(stop.lat),lng:Number(stop.long),name:stop.name_tc||stop.name_en||""});
-            out.push({kind:"bus",co:"CTB",coName:"城巴",route:route,stopId:rs.stop,name:stop.name_tc||stop.name_en,nameEn:stop.name_en,lat:Number(stop.lat),lng:Number(stop.long),path:path.slice(-28),dist:Math.round(d),bound:bound,serviceType:"1",orig:meta.orig_tc||"",dest:meta.dest_tc||""});
+            out.push({kind:"bus",co:"CTB",coName:"城巴",route:route,stopId:rs.stop,name:stop.name_tc||stop.name_en,nameEn:stop.name_en,lat:Number(stop.lat),lng:Number(stop.long),path:path.slice(-12),ahead:[],dist:Math.round(d),bound:bound,serviceType:"1",orig:meta.orig_tc||"",dest:meta.dest_tc||"",_full:path});
+          });
+          out.forEach(function(item){
+            if(item._full!==path) return;
+            var idx=path.findIndex(function(s){return s.lat===item.lat&&s.lng===item.lng;});
+            item.ahead=idx>=0?path.slice(idx):[{lat:item.lat,lng:item.lng,name:item.name}];
+            item.path=path.slice(Math.max(0,idx-10), idx+1);
+            delete item._full;
           });
         });
         out.sort(function(a,b){return a.dist-b.dist;});
@@ -1176,16 +1190,26 @@ function startParticles(map,gen){
   }
   requestAnimationFrame(tick);
 }
-function setRouteParts(map,path,prog){
-  var parts=splitPath(path,prog);
-  map._flowPath=parts.upcoming;
-  if(map.getSource("passed")) map.getSource("passed").setData(lineOf(parts.passed));
-  if(map.getSource("upcoming")) map.getSource("upcoming").setData(lineOf(parts.upcoming));
+function setRouteParts(map,passed,upcoming){
+  map._flowPath=upcoming;
+  if(map.getSource("passed")) map.getSource("passed").setData(lineOf(passed));
+  if(map.getSource("upcoming")) map.getSource("upcoming").setData(lineOf(upcoming));
+}
+function routeParts(c){
+  var behind=c.path&&c.path.length?c.path:[{lat:c.lat,lng:c.lng,name:c.name||""}];
+  var prog=etaProgress(c);
+  var pos=alongPath(behind, prog)||behind[behind.length-1];
+  var ahead=(c.ahead&&c.ahead.length)?c.ahead:[behind[behind.length-1]];
+  var passed=behind.slice();
+  var upcoming=[pos].concat(ahead.filter(function(p,i){return i>0||!pos;}));
+  if(upcoming.length<2) upcoming=[pos, ahead[ahead.length-1]||pos];
+  return {pos:pos, prog:prog, passed:passed, upcoming:upcoming};
 }
 function updateLiveMap(map,c){
+  var parts=routeParts(c);
   var path=c.path&&c.path.length?c.path:[{lat:c.lat,lng:c.lng}];
-  var prog=etaProgress(c);
-  var pos=alongPath(path, prog)||{lat:c.lat,lng:c.lng};
+  var prog=parts.prog;
+  var pos=parts.pos;
   var hd=headingAt(path,prog);
   try{
     if(map._bus){
@@ -1199,7 +1223,7 @@ function updateLiveMap(map,c){
     var pin=map.getContainer().querySelector(".herepin");
     if(pin) pin.innerHTML=nearHint(path,pos,c.name);
     try{ map.resize(); }catch(e){}
-    setRouteParts(map,path,prog);
+    setRouteParts(map,parts.passed,parts.upcoming);
   }catch(e){}
 }
 function mountCardMaps(cards){
@@ -1212,9 +1236,10 @@ function mountCardMaps(cards){
     var el=boxes[i]; if(!el) return;
     if(el._swMap && el._swMap.getStyle && el.querySelector("canvas")){ updateLiveMap(el._swMap,c); keep.push(el._swMap); return; }
     if(el._swMap){ try{el._swMap.remove();}catch(e){} el._swMap=null; }
+    var parts0=routeParts(c);
     var path=c.path&&c.path.length?c.path:[{lat:c.lat,lng:c.lng}];
-    var prog=etaProgress(c);
-    var pos=alongPath(path, prog)||{lat:c.lat,lng:c.lng};
+    var prog=parts0.prog;
+    var pos=parts0.pos;
     var hd=headingAt(path,prog);
     var map=new maplibregl.Map({
       container:el,
@@ -1225,16 +1250,17 @@ function mountCardMaps(cards){
       dragPan:true,
       dragRotate:false,
       touchZoomRotate:true,
+      touchPitch:false,
+      cooperativeGestures:false,
       pitchWithRotate:false,
       pixelRatio:Math.min(window.devicePixelRatio||2, 3)
     });
     map.on("load",function(){
       tuneMap(map);
-      if(path.length>1){
-        var parts=splitPath(path,prog);
-        map._flowPath=parts.upcoming;
-        map.addSource("passed",{type:"geojson",data:lineOf(parts.passed)});
-        map.addSource("upcoming",{type:"geojson",data:lineOf(parts.upcoming)});
+      if(path.length>1 || (c.ahead&&c.ahead.length>1)){
+        map._flowPath=parts0.upcoming;
+        map.addSource("passed",{type:"geojson",data:lineOf(parts0.passed)});
+        map.addSource("upcoming",{type:"geojson",data:lineOf(parts0.upcoming)});
         map.addLayer({id:"passed",type:"line",source:"passed",layout:{"line-cap":"round","line-join":"round"},paint:{"line-color":"#8b8b92","line-width":4,"line-opacity":0.85}});
         map.addLayer({id:"upcoming",type:"line",source:"upcoming",layout:{"line-cap":"round","line-join":"round"},paint:{"line-color":"#7dffc2","line-width":5,"line-opacity":0.35}});
         map.addLayer({id:"upcomingglow",type:"line",source:"upcoming",layout:{"line-cap":"round","line-join":"round"},paint:{"line-color":"#7dffc2","line-width":2.2,"line-opacity":0.9}});
