@@ -1428,7 +1428,7 @@ function tickClock(){
 tickClock();
 setInterval(tickClock,1000);
 loadCatalog().then(function(){ renderTags(); useGps(); });
-setInterval(scanGpsThenRefresh,30000);
+setInterval(scanGpsThenRefresh,10000);
 setInterval(function(){
   var shown=state._shown||[];
   if(!shown.length) return;
