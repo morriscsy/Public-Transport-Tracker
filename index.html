@@ -93,7 +93,7 @@ h1{margin:2px 0 0;font-size:24px;letter-spacing:-.03em;font-weight:750}
 .times.mini .clk{font-size:12px}
 .cardmap{position:relative;height:168px;width:100%;border-radius:14px;overflow:hidden;margin-top:10px;background:#1c2128}
 .cardmap .maplibregl-ctrl-attrib,.cardmap .maplibregl-ctrl-logo{display:none}
-.cardmap canvas{image-rendering:auto;filter:brightness(1.12) contrast(1.18)}
+.cardmap canvas{image-rendering:auto}
 .flowdot{width:8px;height:8px;border-radius:50%;background:#eafff6;box-shadow:0 0 6px 3px rgba(125,255,194,.95),0 0 14px 6px rgba(125,255,194,.55);pointer-events:none}
 .veh{width:26px;height:66px;transform-origin:50% 50%;filter:drop-shadow(0 6px 6px rgba(0,0,0,.45))}
 .veh svg{display:block;overflow:visible}
@@ -1051,24 +1051,18 @@ function etaProgress(c){
 var miniMaps=[];
 var flowGen=0;
 function tuneMap(map){
-  ["road_oneway","road_oneway_opposite"].forEach(function(id){
+  ["road_oneway","road_oneway_opposite","highway-shield-non-us","highway-shield-us-interstate","road_shield_us","label_country_1","label_country_2","label_country_3","label_state"].forEach(function(id){
     if(map.getLayer(id)) map.setLayoutProperty(id,"visibility","none");
   });
-  var roads={
-    highway_path:"#4a4a50",
-    highway_minor:"#5c5c64",
-    highway_major_casing:"#7a7a82",
-    highway_major_inner:"#3a3a40",
-    highway_major_subtle:"#4e4e56",
-    highway_motorway_casing:"#888890",
-    highway_motorway_inner:"#5a5a64",
-    highway_motorway_subtle:"#4a4a52"
-  };
-  Object.keys(roads).forEach(function(id){
-    if(map.getLayer(id)){
-      try{ map.setPaintProperty(id,"line-color",roads[id]); }catch(e){}
-    }
+  ["highway-name-path","highway-name-minor","highway-name-major","label_other","label_village","label_town","label_city","label_city_capital","water_name_point_label","water_name_line_label","waterway_line_label"].forEach(function(id){
+    if(!map.getLayer(id)) return;
+    try{ map.setPaintProperty(id,"text-color","#6a6a70"); }catch(e){}
+    try{ map.setPaintProperty(id,"text-halo-color","rgba(255,255,255,.8)"); }catch(e){}
+    try{ map.setPaintProperty(id,"text-halo-width",1.1); }catch(e){}
   });
+  if(map.getLayer("background")){
+    try{ map.setPaintProperty("background","background-color","#eceeed"); }catch(e){}
+  }
 }
 function startParticles(map,path,gen){
   var n=8, dots=[];
@@ -1105,7 +1099,7 @@ function mountCardMaps(cards){
     var hd=headingAt(path,prog);
     var map=new maplibregl.Map({
       container:el,
-      style:"https://tiles.openfreemap.org/styles/dark",
+      style:"https://tiles.openfreemap.org/styles/positron",
       center:[pos.lng,pos.lat],
       zoom:15.8,
       attributionControl:false,
