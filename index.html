@@ -1322,7 +1322,7 @@ function mountCardMaps(cards){
   cards.forEach(function(c,i){
     if(!c.lat||!c.lng) return;
     var el=boxes[i]; if(!el) return;
-    if(el._swMap && el._swMap.getStyle && el.querySelector("canvas")){ updateLiveMap(el._swMap,c); keep.push(el._swMap); return; }
+    if(el._swMap && el._swMap.getStyle && el.querySelector("canvas")){ updateLiveMap(el._swMap,c); bindMapTouch(el._swMap, el); keep.push(el._swMap); return; }
     if(el._swMap){ try{el._swMap.remove();}catch(e){} el._swMap=null; }
     var parts0=routeParts(c);
     var path=c.path&&c.path.length?c.path:[{lat:c.lat,lng:c.lng}];
