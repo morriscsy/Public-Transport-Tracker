@@ -1003,12 +1003,29 @@ function bindWatch(){
     else { last=now; lastEl=card; }
   });
 }
+function watchPop(on, name){
+  var box=document.getElementById("watchpop");
+  if(!box){
+    box=document.createElement("div");
+    box.id="watchpop";
+    box.style.cssText="position:fixed;left:50%;top:18%;transform:translateX(-50%);z-index:80;background:#10281f;color:#eafff6;border:1px solid #7dffc2;border-radius:16px;padding:14px 18px;font-size:15px;font-weight:700;box-shadow:0 10px 30px rgba(0,0,0,.45);max-width:86vw;text-align:center";
+    document.body.appendChild(box);
+  }
+  box.textContent=on?("已開啟提醒 · "+name+"\n剩 10 分鐘同 5 分鐘會通知"):("已關閉提醒 · "+name);
+  box.style.whiteSpace="pre-line";
+  box.style.display="block";
+  clearTimeout(box._t);
+  box._t=setTimeout(function(){ box.style.display="none"; }, 1800);
+}
 function toggleWatch(card){
-  var key=card.getAttribute("data-key"); if(!key) return;
-  if(state.watch[key]){ delete state.watch[key]; card.classList.remove("watch"); say("已取消提醒"); }
+  var key=card.getAttribute("data-key"); if(!key||key==="undefined") return;
+  var name=(card.querySelector(".bus")||{}).textContent||"呢班";
+  var dest=(card.querySelector(".to b")||{}).textContent||"";
+  var label=name+(dest?(" 往 "+dest):"");
+  if(state.watch[key]){ delete state.watch[key]; card.classList.remove("watch"); watchPop(false,label); }
   else {
     state.watch[key]=1; card.classList.add("watch");
-    say("已盯住呢班，剩 10 分鐘同 5 分鐘會通知");
+    watchPop(true,label);
     if(window.Notification && Notification.permission==="default") Notification.requestPermission();
   }
   saveWatch();
@@ -1059,6 +1076,7 @@ function paint(){
     $("feed").innerHTML='<div class="card">呢一頁暫時無班次。可轉「全部」或改路線分類。</div>';
     return;
   }
+  cards.forEach(function(c){ c._key=(c.co||c.kind)+"-"+c.route+"-"+(c.bound||"")+"-"+c.stopId+"-"+String((c.etas&&c.etas[0]&&c.etas[0].dest)||c.dest||"").slice(0,10); });
   var kept={};
   [].forEach.call(document.querySelectorAll(".cardmap"),function(el){ kept[el.id]=el; el.remove(); });
   $("feed").innerHTML=cards.map(function(c){
@@ -1081,7 +1099,6 @@ function paint(){
       fresh.parentNode.replaceChild(kept[el.id], fresh);
     }
   });
-  cards.forEach(function(c){ c._key=(c.co||c.kind)+"-"+c.route+"-"+(c.bound||"")+"-"+c.stopId; });
   state._shown=cards;
   mountCardMaps(cards.filter(function(c){return c.kind==="bus";}));
   bindWatch();
