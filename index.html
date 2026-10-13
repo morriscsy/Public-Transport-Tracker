@@ -92,6 +92,7 @@ h1{margin:2px 0 0;font-size:24px;letter-spacing:-.03em;font-weight:750}
 .times.mini .lab{font-size:11px}
 .times.mini .clk{font-size:12px}
 .cardmap{position:relative;height:168px;width:100%;border-radius:14px;overflow:hidden;margin-top:10px;background:#1c2128}
+.cardmap .leaflet-tile{filter:contrast(1.4) brightness(1.25)}
 .cardmap .leaflet-control-attribution{display:none}
 .veh{width:26px;height:66px;transform-origin:50% 50%;filter:drop-shadow(0 6px 6px rgba(0,0,0,.45))}
 .veh svg{display:block;overflow:visible}
@@ -1055,7 +1056,8 @@ function mountCardMaps(cards){
     if(!c.lat||!c.lng) return;
     var el=$("map"+i); if(!el) return;
     var map=L.map(el,{zoomControl:false,attributionControl:false,dragging:true,scrollWheelZoom:false});
-    L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",{maxZoom:19}).addTo(map);
+    L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}",{maxZoom:16}).addTo(map);
+    L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Reference/MapServer/tile/{z}/{y}/{x}",{maxZoom:16}).addTo(map);
     var path=c.path&&c.path.length?c.path:[{lat:c.lat,lng:c.lng}];
     if(path.length>1) L.polyline(path.map(function(p){return [p.lat,p.lng];}),{color:"#f0c36a",weight:3,opacity:.75}).addTo(map);
     L.circleMarker([c.lat,c.lng],{radius:6,color:"#fff",fillColor:"#f0c36a",fillOpacity:1,weight:2}).addTo(map);
