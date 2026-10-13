@@ -45,8 +45,8 @@ h1{margin:2px 0 0;font-size:24px;letter-spacing:-.03em;font-weight:750}
 .quick,.tabs{display:flex;gap:8px;overflow:auto;margin:10px 0;padding-bottom:2px}
 .quick button,.tabs button{border:1px solid rgba(255,255,255,.1);background:transparent;color:#fff;border-radius:999px;padding:7px 12px;white-space:nowrap;font-size:13px}
 .tabs button.on{background:#1e2330;color:#f0c36a;border-color:rgba(240,195,106,.4)}
-.regions{display:flex;gap:6px;overflow:auto;margin:0 0 8px;padding-bottom:2px}
-.regions button{border:1px solid rgba(255,255,255,.1);background:transparent;color:#c5bfb4;border-radius:999px;padding:6px 10px;white-space:nowrap;font-size:12px}
+.regions{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 8px;overflow:visible}
+.regions button{border:1px solid rgba(255,255,255,.1);background:transparent;color:#c5bfb4;border-radius:999px;padding:6px 9px;white-space:nowrap;font-size:12px;flex:1 1 calc(33.33% - 6px);max-width:calc(33.33% - 4px);text-align:center}
 .regions button.on{background:#14261d;color:#7dffc2;border-color:rgba(125,255,194,.55)}
 .rchip{display:inline-block;margin-left:6px;font-size:10px;font-weight:700;color:#7dffc2;background:rgba(125,255,194,.12);border:1px solid rgba(125,255,194,.35);border-radius:999px;padding:1px 6px;vertical-align:middle}
 .tagbar{display:flex;align-items:flex-start;gap:8px;flex-wrap:wrap}
@@ -122,6 +122,8 @@ h1{margin:2px 0 0;font-size:24px;letter-spacing:-.03em;font-weight:750}
 #feed{display:flex;flex-direction:column}
 .topbar .row{margin-bottom:10px}
 @media (min-width:740px){
+  .regions button{flex:0 1 auto;max-width:none}
+}
   .app{max-width:1100px;padding:16px 24px 40px}
   .brand{margin-bottom:6px}
   .topbar{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;margin-bottom:10px}
@@ -222,11 +224,11 @@ h1{margin:2px 0 0;font-size:24px;letter-spacing:-.03em;font-weight:750}
 <button type="button" class="on" data-tab="all">全部</button>
 </div>
 <div class="regions" id="regions">
-<button type="button" class="on" data-region="all">全部路線</button>
-<button type="button" data-region="hk-kln">島 ↔ 九龍</button>
-<button type="button" data-region="hk-nt">島 ↔ 新界</button>
-<button type="button" data-region="kln-nt">九龍 ↔ 新界</button>
-<button type="button" data-region="hk">島內</button>
+<button type="button" class="on" data-region="all">全部</button>
+<button type="button" data-region="hk-kln">香港島↔九龍</button>
+<button type="button" data-region="hk-nt">香港島↔新界</button>
+<button type="button" data-region="kln-nt">九龍↔新界</button>
+<button type="button" data-region="hk">香港島內</button>
 <button type="button" data-region="kln">九龍內</button>
 <button type="button" data-region="nt">新界內</button>
 </div>
@@ -558,7 +560,7 @@ function regionPair(from,to){
   return [from,to].sort().join("-");
 }
 function regionLabel(key){
-  return ({"hk-kln":"島↔九龍","hk-nt":"島↔新界","kln-nt":"九龍↔新界",hk:"島內",kln:"九龍內",nt:"新界內",other:"其他"})[key]||"其他";
+  return ({"hk-kln":"香港島↔九龍","hk-nt":"香港島↔新界","kln-nt":"九龍↔新界",hk:"香港島內",kln:"九龍內",nt:"新界內",other:"其他"})[key]||"其他";
 }
 function cardRegion(c){
   var from=regionOfLatLng(c.lat,c.lng)||regionOfName(c.name);
