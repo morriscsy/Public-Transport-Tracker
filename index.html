@@ -988,6 +988,7 @@ function paint(){
       fresh.parentNode.replaceChild(kept[el.id], fresh);
     }
   });
+  state._shown=cards;
   mountCardMaps(cards.filter(function(c){return c.kind==="bus";}));
 }
 function busTop(){
@@ -1267,18 +1268,17 @@ setInterval(tickClock,1000);
 loadCatalog().then(function(){ renderTags(); useGps(); });
 setInterval(function(){if(state.items.length) refresh();},15000);
 setInterval(function(){
-  if(!state.cards||!state.cards.length) return;
+  var shown=state._shown||[];
+  if(!shown.length) return;
   var boxes=document.querySelectorAll(".card .times");
-  var shown=sortCards(state.cards.filter(function(c){
-    if(state.tab==="kmb" && !(c.kind==="bus" && c.co==="KMB")) return false;
-    if(state.tab==="ctb" && !(c.kind==="bus" && c.co==="CTB")) return false;
-    if(state.tab==="mtr" && c.kind!=="mtr") return false;
-    return true;
-  }));
+  var maps=document.querySelectorAll(".cardmap");
+  var mi=0;
   shown.forEach(function(c,i){
     if(boxes[i]) boxes[i].innerHTML=[0,1,2].map(function(n){return slot(c.etas[n],n+1);}).join("");
-    var el=document.querySelectorAll(".cardmap")[i];
-    if(el&&el._swMap) updateLiveMap(el._swMap,c);
+    if(c.kind==="bus"){
+      var el=maps[mi++];
+      if(el&&el._swMap) updateLiveMap(el._swMap,c);
+    }
   });
 },10000);
 })();
