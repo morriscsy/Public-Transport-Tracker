@@ -1001,7 +1001,16 @@ function busTop(){
 }
 function headingAt(path,t){
   if(!path||path.length<2) return 0;
-  var p=alongPath(path,t), n=alongPath(path,Math.min(1,t+0.08));
+  var p=alongPath(path,t);
+  var n=null, step=0.06;
+  for(var i=1;i<=6;i++){
+    var q=alongPath(path,Math.min(1,t+step*i));
+    if(q && p && (Math.abs(q.lat-p.lat)+Math.abs(q.lng-p.lng))>0.00002){ n=q; break; }
+  }
+  if(!n){
+    p=alongPath(path,Math.max(0,t-0.08));
+    n=alongPath(path,t);
+  }
   if(!p||!n) return 0;
   return Math.atan2(n.lng-p.lng, n.lat-p.lat)*180/Math.PI;
 }
@@ -1120,10 +1129,12 @@ function mountCardMaps(cards){
     stop.style.cssText="width:12px;height:12px;border-radius:50%;background:#7dffc2;border:2px solid #fff;box-shadow:0 0 0 2px rgba(0,0,0,.35)";
     new maplibregl.Marker({element:stop,anchor:"center"}).setLngLat([c.lng,c.lat]).addTo(map);
     var bus=document.createElement("div");
-    bus.className="veh";
-    bus.style.transform="rotate("+hd+"deg)";
-    bus.innerHTML=busTop();
-    new maplibregl.Marker({element:bus,anchor:"center"}).setLngLat([pos.lng,pos.lat]).addTo(map);
+    var body=document.createElement("div");
+    body.className="veh";
+    body.style.transform="rotate("+hd+"deg)";
+    body.innerHTML=busTop();
+    bus.appendChild(body);
+    new maplibregl.Marker({element:bus,anchor:"center",rotation:hd,rotationAlignment:"map"}).setLngLat([pos.lng,pos.lat]).addTo(map);
     var pin=document.createElement("div");
     pin.className="herepin";
     pin.innerHTML=nearHint(path,pos,c.name);
