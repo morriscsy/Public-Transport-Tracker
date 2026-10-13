@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#07080c">
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<link rel="stylesheet" href="https://unpkg.com/maplibre-gl@5.6.1/dist/maplibre-gl.css">
 <title>StationWise</title>
 <meta name="apple-mobile-web-app-title" content="StationWise">
 <style>
@@ -92,8 +92,8 @@ h1{margin:2px 0 0;font-size:24px;letter-spacing:-.03em;font-weight:750}
 .times.mini .lab{font-size:11px}
 .times.mini .clk{font-size:12px}
 .cardmap{position:relative;height:168px;width:100%;border-radius:14px;overflow:hidden;margin-top:10px;background:#1c2128}
-.cardmap .leaflet-tile{filter:contrast(1.4) brightness(1.25)}
-.cardmap .leaflet-control-attribution{display:none}
+.cardmap .maplibregl-ctrl-attrib,.cardmap .maplibregl-ctrl-logo{display:none}
+.cardmap canvas{image-rendering:auto}
 .veh{width:26px;height:66px;transform-origin:50% 50%;filter:drop-shadow(0 6px 6px rgba(0,0,0,.45))}
 .veh svg{display:block;overflow:visible}
 .herepin{position:absolute;left:8px;bottom:8px;z-index:500;max-width:78%;background:rgba(12,14,18,.82);border:1px solid rgba(240,195,106,.4);color:#f7f4ee;font-size:11px;font-weight:650;padding:6px 8px;border-radius:10px;line-height:1.35;pointer-events:none}
@@ -250,7 +250,7 @@ h1{margin:2px 0 0;font-size:24px;letter-spacing:-.03em;font-weight:750}
     <button class="gbtn" id="gateGps" type="button">開啟定位並開始</button>
   </div>
 </div>
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://unpkg.com/maplibre-gl@5.6.1/dist/maplibre-gl.js"></script>
 <script>
 (function(){
 var KMB="https://data.etabus.gov.hk/v1/transport/kmb";
@@ -1051,29 +1051,43 @@ var miniMaps=[];
 function mountCardMaps(cards){
   miniMaps.forEach(function(m){ try{m.remove();}catch(e){} });
   miniMaps=[];
-  if(!window.L) return;
+  if(!window.maplibregl) return;
   cards.forEach(function(c,i){
     if(!c.lat||!c.lng) return;
     var el=$("map"+i); if(!el) return;
-    var map=L.map(el,{zoomControl:false,attributionControl:false,dragging:true,scrollWheelZoom:false});
-    L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}",{maxZoom:16}).addTo(map);
-    L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Reference/MapServer/tile/{z}/{y}/{x}",{maxZoom:16}).addTo(map);
     var path=c.path&&c.path.length?c.path:[{lat:c.lat,lng:c.lng}];
-    if(path.length>1) L.polyline(path.map(function(p){return [p.lat,p.lng];}),{color:"#f0c36a",weight:3,opacity:.75}).addTo(map);
-    L.circleMarker([c.lat,c.lng],{radius:6,color:"#fff",fillColor:"#f0c36a",fillOpacity:1,weight:2}).addTo(map);
     var prog=etaProgress(c);
     var pos=alongPath(path, prog)||{lat:c.lat,lng:c.lng};
     var hd=headingAt(path,prog);
-    var vhtml='<div class="veh" style="transform:rotate('+hd+'deg)">'+busTop()+'</div>';
-    var veh=L.marker([pos.lat,pos.lng],{icon:L.divIcon({className:"",html:vhtml,iconSize:[26,66],iconAnchor:[13,33]})}).addTo(map);
+    var map=new maplibregl.Map({
+      container:el,
+      style:"https://tiles.openfreemap.org/styles/dark",
+      center:[pos.lng,pos.lat],
+      zoom:15.8,
+      attributionControl:false,
+      dragRotate:false,
+      pitchWithRotate:false,
+      pixelRatio:Math.min(window.devicePixelRatio||2, 3)
+    });
+    map.on("load",function(){
+      if(path.length>1){
+        map.addSource("route",{type:"geojson",data:{type:"Feature",geometry:{type:"LineString",coordinates:path.map(function(p){return [p.lng,p.lat];})}}});
+        map.addLayer({id:"route",type:"line",source:"route",layout:{"line-cap":"round","line-join":"round"},paint:{"line-color":"#f0c36a","line-width":3.2,"line-opacity":0.9}});
+      }
+    });
+    var stop=document.createElement("div");
+    stop.style.cssText="width:12px;height:12px;border-radius:50%;background:#f0c36a;border:2px solid #fff;box-shadow:0 0 0 2px rgba(0,0,0,.35)";
+    new maplibregl.Marker({element:stop,anchor:"center"}).setLngLat([c.lng,c.lat]).addTo(map);
+    var bus=document.createElement("div");
+    bus.className="veh";
+    bus.style.transform="rotate("+hd+"deg)";
+    bus.innerHTML=busTop();
+    new maplibregl.Marker({element:bus,anchor:"center"}).setLngLat([pos.lng,pos.lat]).addTo(map);
     var pin=document.createElement("div");
     pin.className="herepin";
     pin.innerHTML=nearHint(path,pos,c.name);
     el.appendChild(pin);
-    map.setView([pos.lat,pos.lng],16);
-    setTimeout(function(){map.invalidateSize();},120);
     miniMaps.push(map);
-    c._veh=veh; c._path=path;
   });
 }
 function refresh(){
