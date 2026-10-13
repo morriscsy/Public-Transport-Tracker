@@ -759,6 +759,7 @@ function busEtas(item){
 function mtrCardsFor(code){
   var sta=MTR_BY[code]; if(!sta) return Promise.resolve([]);
   var d=dist(state.loc.lat,state.loc.lng,sta.lat,sta.lng);
+  if(d>MTR_MAX) return Promise.resolve([]);
   return Promise.all(sta.ln.map(function(line){
     return getJson(MTR_ETA+"?line="+line+"&sta="+code).then(function(j){
       var pack=(j.data||{})[line+"-"+code]||{}, cards=[];
@@ -1017,8 +1018,8 @@ function refresh(){
     });
     var available={};
     cards.forEach(function(c){
-      if(c.kind==="bus") available["bus|"+String(c.route).toUpperCase()]=1;
-      if(c.kind==="mtr") available["mtr|"+c.stopId]=1;
+      if(c.kind==="bus" && c.dist<=HARD_CAP) available["bus|"+String(c.route).toUpperCase()]=1;
+      if(c.kind==="mtr" && c.dist<=MTR_MAX) available["mtr|"+c.stopId]=1;
     });
     state.available=available;
     var changed=false;
