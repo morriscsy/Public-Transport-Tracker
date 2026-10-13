@@ -1028,6 +1028,31 @@ function watchPop(on, name){
   clearTimeout(box._t);
   box._t=setTimeout(function(){ box.style.display="none"; }, 1800);
 }
+var PUSH_API="";
+var VAPID_PUBLIC="BCKPnpL4F-H_hWYNk4UFXdDDh9ErgezgXlM41cHjTcnqRuNE-3jXNEl34JBLa3OTO_BH7kPWfdpm99QTSwRHfn0";
+function urlB64ToUint8(base64String){
+  var padding="=".repeat((4-base64String.length%4)%4);
+  var base64=(base64String+padding).replace(/-/g,"+").replace(/_/g,"/");
+  var raw=atob(base64), out=new Uint8Array(raw.length);
+  for(var i=0;i<raw.length;i++) out[i]=raw.charCodeAt(i);
+  return out;
+}
+function watchPayload(){
+  return (state._shown||[]).filter(function(c){return state.watch[c._key];}).map(function(c){
+    return {key:c._key, kind:c.kind, co:c.co, route:c.route, stopId:c.stopId, bound:c.bound, dest:c.dest};
+  });
+}
+async function syncPush(){
+  if(!PUSH_API || !("serviceWorker" in navigator) || !("PushManager" in window)) return;
+  try{
+    var reg=await navigator.serviceWorker.ready;
+    var perm=await Notification.requestPermission();
+    if(perm!=="granted") return;
+    var sub=await reg.pushManager.getSubscription();
+    if(!sub) sub=await reg.pushManager.subscribe({userVisibleOnly:true, applicationServerKey:urlB64ToUint8(VAPID_PUBLIC)});
+    await fetch(PUSH_API+"/api/subscribe",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(Object.assign({}, sub.toJSON(), {watches:watchPayload()}))});
+  }catch(e){}
+}
 function toggleWatch(card){
   var key=card.getAttribute("data-key"); if(!key||key==="undefined") return;
   var name=(card.querySelector(".bus")||{}).textContent||"呢班";
@@ -1047,6 +1072,7 @@ function toggleWatch(card){
     checkAlerts(state._shown||[]);
   }
   saveWatch();
+  syncPush();
 }
 var alertStore="sw-alerted-v1";
 state.alerted=JSON.parse(localStorage.getItem(alertStore)||"{}");
