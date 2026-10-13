@@ -91,7 +91,8 @@ h1{margin:2px 0 0;font-size:24px;letter-spacing:-.03em;font-weight:750}
 .times.mini .big{font-size:20px;margin:6px 0 4px;line-height:1}
 .times.mini .lab{font-size:11px}
 .times.mini .clk{font-size:12px}
-.cardmap{position:relative;height:168px;width:100%;border-radius:14px;overflow:hidden;margin-top:10px;background:#1c2128;touch-action:none}
+.cardmap{position:relative;height:168px;width:100%;border-radius:14px;overflow:hidden;margin-top:10px;background:#1c2128;touch-action:none;z-index:1}
+.cardmap canvas,.cardmap .maplibregl-canvas{touch-action:none !important}
 .cardmap .maplibregl-ctrl-attrib,.cardmap .maplibregl-ctrl-logo{display:none}
 .cardmap canvas{image-rendering:auto}
 .flip{transform:scaleX(-1);transform-origin:center}
@@ -1190,10 +1191,42 @@ function startParticles(map,gen){
   }
   requestAnimationFrame(tick);
 }
+var roadCache={};
+function samplePts(pts,max){
+  if(!pts||pts.length<=max) return pts||[];
+  var out=[], step=(pts.length-1)/(max-1);
+  for(var i=0;i<max;i++) out.push(pts[Math.round(i*step)]);
+  return out;
+}
+function roadLine(pts){
+  pts=(pts||[]).filter(function(p){return p&&isFinite(p.lat)&&isFinite(p.lng);});
+  if(pts.length<2) return Promise.resolve(pts);
+  var sampled=samplePts(pts,10);
+  var key=sampled.map(function(p){return p.lat.toFixed(4)+","+p.lng.toFixed(4);}).join("|");
+  if(roadCache[key]) return Promise.resolve(roadCache[key]);
+  var qs=sampled.map(function(p){return p.lng+","+p.lat;}).join(";");
+  return fetch("https://router.project-osrm.org/route/v1/driving/"+qs+"?overview=full&geometries=geojson")
+    .then(function(r){return r.json();})
+    .then(function(j){
+      var coords=j.routes&&j.routes[0]&&j.routes[0].geometry&&j.routes[0].geometry.coordinates;
+      var line=coords&&coords.length>1?coords.map(function(c){return {lng:c[0],lat:c[1]};}):pts;
+      roadCache[key]=line;
+      return line;
+    }).catch(function(){return pts;});
+}
+function applyRoad(map,passed,upcoming){
+  Promise.all([roadLine(passed), roadLine(upcoming)]).then(function(arr){
+    if(!map.getStyle||!map.getSource("upcoming")) return;
+    map._flowPath=arr[1];
+    try{ map.getSource("passed").setData(lineOf(arr[0])); }catch(e){}
+    try{ map.getSource("upcoming").setData(lineOf(arr[1])); }catch(e){}
+  });
+}
 function setRouteParts(map,passed,upcoming){
   map._flowPath=upcoming;
   if(map.getSource("passed")) map.getSource("passed").setData(lineOf(passed));
   if(map.getSource("upcoming")) map.getSource("upcoming").setData(lineOf(upcoming));
+  applyRoad(map,passed,upcoming);
 }
 function routeParts(c){
   var behind=c.path&&c.path.length?c.path:[{lat:c.lat,lng:c.lng,name:c.name||""}];
@@ -1255,8 +1288,13 @@ function mountCardMaps(cards){
       pitchWithRotate:false,
       pixelRatio:Math.min(window.devicePixelRatio||2, 3)
     });
+    map.dragPan.enable();
+    map.touchZoomRotate.enable();
+    map.scrollZoom.enable();
+    el.addEventListener("touchmove", function(e){ e.preventDefault(); }, {passive:false});
     map.on("load",function(){
       tuneMap(map);
+      try{ map.resize(); map.dragPan.enable(); map.touchZoomRotate.enable(); }catch(e){}
       if(path.length>1 || (c.ahead&&c.ahead.length>1)){
         map._flowPath=parts0.upcoming;
         map.addSource("passed",{type:"geojson",data:lineOf(parts0.passed)});
@@ -1265,6 +1303,7 @@ function mountCardMaps(cards){
         map.addLayer({id:"upcoming",type:"line",source:"upcoming",layout:{"line-cap":"round","line-join":"round"},paint:{"line-color":"#7dffc2","line-width":5,"line-opacity":0.35}});
         map.addLayer({id:"upcomingglow",type:"line",source:"upcoming",layout:{"line-cap":"round","line-join":"round"},paint:{"line-color":"#7dffc2","line-width":2.2,"line-opacity":0.9}});
         startParticles(map,flowGen);
+        applyRoad(map, parts0.passed, parts0.upcoming);
       }
     });
     var stop=document.createElement("div");
