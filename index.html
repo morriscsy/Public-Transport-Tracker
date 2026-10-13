@@ -618,18 +618,21 @@ function nameFromCoords(lat,lng,done){
     done(extra&&n.indexOf(extra)<0?(n+" · "+extra):n);
   }).catch(function(){done(fallback);});
 }
-function applyGps(pos){
-  state.loc={lat:pos.coords.latitude,lng:pos.coords.longitude};
+function applyGps(pos,silent){
+  state.loc={lat:pos.coords.latitude,lng:pos.coords.longitude,acc:pos.coords.accuracy||0};
   state.mode="gps";
+  state._gpsAt=Date.now();
   $("gpsBtn").classList.add("on"); $("homeBtn").classList.remove("on");
   $("locPanel").classList.remove("on");
   if($("gate")) $("gate").classList.remove("on");
-  $("locLine").textContent="已用即時定位 · 讀取地名中";
-  nameFromCoords(state.loc.lat,state.loc.lng,function(n){
-    $("locLine").textContent="已用即時定位 · "+n;
-    if(!state.home) saveHome({name:n,lat:state.loc.lat,lng:state.loc.lng}, true);
-  });
-  say("定位成功");
+  if(!silent){
+    $("locLine").textContent="已用即時定位 · 讀取地名中";
+    nameFromCoords(state.loc.lat,state.loc.lng,function(n){
+      $("locLine").textContent="已用即時定位 · "+n;
+      if(!state.home) saveHome({name:n,lat:state.loc.lat,lng:state.loc.lng}, true);
+    });
+    say("定位成功");
+  }
   refresh();
 }
 function useGps(){
@@ -637,10 +640,18 @@ function useGps(){
   if(!navigator.geolocation){say("此瀏覽器不支援定位");return;}
   $("locPanel").classList.remove("on");
   say("正在要求定位…請撳允許");
-  var opts={enableHighAccuracy:true,timeout:20000,maximumAge:15000};
-  navigator.geolocation.getCurrentPosition(applyGps,function(err){
-    navigator.geolocation.getCurrentPosition(applyGps,geoError,{enableHighAccuracy:false,timeout:25000,maximumAge:60000});
+  var opts={enableHighAccuracy:true,timeout:20000,maximumAge:0};
+  navigator.geolocation.getCurrentPosition(function(pos){applyGps(pos,false);},function(){
+    navigator.geolocation.getCurrentPosition(function(pos){applyGps(pos,false);},geoError,{enableHighAccuracy:false,timeout:25000,maximumAge:20000});
   },opts);
+}
+function scanGpsThenRefresh(){
+  if(state.mode!=="gps" || !navigator.geolocation){ if(state.items.length) refresh(); return; }
+  navigator.geolocation.getCurrentPosition(function(pos){
+    state.loc={lat:pos.coords.latitude,lng:pos.coords.longitude,acc:pos.coords.accuracy||0};
+    state._gpsAt=Date.now();
+    refresh();
+  },function(){ if(state.loc) refresh(); },{enableHighAccuracy:true,timeout:12000,maximumAge:0});
 }
 $("gpsBtn").onclick=useGps;
 $("locForm").addEventListener("submit",function(e){e.preventDefault(); searchPlace($("locQ").value);});
@@ -821,7 +832,7 @@ function kmbNearby(route){
           var d=dist(state.loc.lat,state.loc.lng,Number(stop.lat),Number(stop.long));
           var key=rs.stop+"-"+p.v.bound; if(seen[key]) return; seen[key]=1;
           path.push({lat:Number(stop.lat),lng:Number(stop.long),name:stop.name_tc||stop.name_en||""});
-          all.push({kind:"bus",co:"KMB",coName:"九巴／龍運",route:route,stopId:rs.stop,name:stop.name_tc,nameEn:stop.name_en,lat:Number(stop.lat),lng:Number(stop.long),path:path.slice(-14),dist:Math.round(d),bound:p.v.bound,serviceType:String(p.v.service_type||"1"),orig:p.v.orig_tc||"",dest:p.v.dest_tc||""});
+          all.push({kind:"bus",co:"KMB",coName:"九巴／龍運",route:route,stopId:rs.stop,name:stop.name_tc,nameEn:stop.name_en,lat:Number(stop.lat),lng:Number(stop.long),path:path.slice(-28),dist:Math.round(d),bound:p.v.bound,serviceType:String(p.v.service_type||"1"),orig:p.v.orig_tc||"",dest:p.v.dest_tc||""});
         });
       });
       all.sort(function(a,b){return a.dist-b.dist;});
@@ -850,7 +861,7 @@ function ctbNearby(route){
             var d=dist(state.loc.lat,state.loc.lng,Number(stop.lat),Number(stop.long));
             var key=rs.stop+"-"+bound; if(seen[key]) return; seen[key]=1;
             path.push({lat:Number(stop.lat),lng:Number(stop.long),name:stop.name_tc||stop.name_en||""});
-            out.push({kind:"bus",co:"CTB",coName:"城巴",route:route,stopId:rs.stop,name:stop.name_tc||stop.name_en,nameEn:stop.name_en,lat:Number(stop.lat),lng:Number(stop.long),path:path.slice(-14),dist:Math.round(d),bound:bound,serviceType:"1",orig:meta.orig_tc||"",dest:meta.dest_tc||""});
+            out.push({kind:"bus",co:"CTB",coName:"城巴",route:route,stopId:rs.stop,name:stop.name_tc||stop.name_en,nameEn:stop.name_en,lat:Number(stop.lat),lng:Number(stop.long),path:path.slice(-28),dist:Math.round(d),bound:bound,serviceType:"1",orig:meta.orig_tc||"",dest:meta.dest_tc||""});
           });
         });
         out.sort(function(a,b){return a.dist-b.dist;});
@@ -1056,14 +1067,14 @@ function nearHint(path,pos,stopName){
   return "約在 <b>"+nm+"</b> 附近 · 尚餘 "+left+" 站";
 }
 function etaProgress(c){
-  var m=999;
-  if(c.etas&&c.etas[0]){
-    m=etaMins(c.etas[0]);
-    if(m==null) m=999;
-  }
-  if(m==null||m<=1) return 0.97;
-  var span=Math.max(6,(c.path&&c.path.length||6)*1.6);
-  return Math.max(0.08, 1-Math.min(m,span)/span);
+  var m=null;
+  if(c.etas&&c.etas[0]) m=etaMins(c.etas[0]);
+  var path=c.path||[];
+  var total=pathLength(path);
+  if(m==null) return total>80?0.55:0.8;
+  if(m<=1 || total<40) return 0.96;
+  var back=Math.min(total*0.94, m*300);
+  return Math.max(0.04, 1-back/total);
 }
 var miniMaps=[];
 var flowGen=0;
@@ -1148,6 +1159,7 @@ function updateLiveMap(map,c){
   try{
     if(map._bus){ map._bus.setLngLat([pos.lng,pos.lat]); map._bus.setRotation(hd); }
     if(map._stop) map._stop.setLngLat([c.lng,c.lat]);
+    if(state.loc && map._you) map._you.setLngLat([state.loc.lng,state.loc.lat]);
     var pin=map.getContainer().querySelector(".herepin");
     if(pin) pin.innerHTML=nearHint(path,pos,c.name);
     setRouteParts(map,path,prog);
@@ -1194,6 +1206,12 @@ function mountCardMaps(cards){
     var stop=document.createElement("div");
     stop.style.cssText="width:12px;height:12px;border-radius:50%;background:#7dffc2;border:2px solid #fff;box-shadow:0 0 0 2px rgba(0,0,0,.35)";
     map._stop=new maplibregl.Marker({element:stop,anchor:"center"}).setLngLat([c.lng,c.lat]).addTo(map);
+    if(state.loc){
+      var you=document.createElement("div");
+      you.className="youdot";
+      you.title="你的位置";
+      map._you=new maplibregl.Marker({element:you,anchor:"center"}).setLngLat([state.loc.lng,state.loc.lat]).addTo(map);
+    }
     var bus=document.createElement("div");
     var body=document.createElement("div");
     body.className="veh";
@@ -1299,7 +1317,7 @@ function tickClock(){
 tickClock();
 setInterval(tickClock,1000);
 loadCatalog().then(function(){ renderTags(); useGps(); });
-setInterval(function(){if(state.items.length) refresh();},15000);
+setInterval(scanGpsThenRefresh,30000);
 setInterval(function(){
   var shown=state._shown||[];
   if(!shown.length) return;
