@@ -1083,12 +1083,14 @@ function checkAlerts(cards){
     var title=(c.kind==="mtr"?c.name:c.route)+" 往 "+dest;
     [10,5,1].forEach(function(mark){
       var id=c._key+"|"+mark;
-      if(mins<=mark && !state.alerted[id]){
+      if(mins<mark-1){ state.alerted[id]=1; return; }
+      if(mins<=mark && mins>=mark-1 && !state.alerted[id]){
         state.alerted[id]=1;
         saveAlerted();
         ping(title, "第 1 班剩約 "+mark+" 分鐘", id);
       }
     });
+    saveAlerted();
   });
 }
 function paint(){
