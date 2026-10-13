@@ -161,6 +161,7 @@ h1{margin:2px 0 0;font-size:24px;letter-spacing:-.03em;font-weight:750}
 }
 </style>
 <link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 </head>
 <body>
@@ -1022,7 +1023,7 @@ function watchPop(on, name){
     box.style.cssText="position:fixed;left:50%;top:18%;transform:translateX(-50%);z-index:80;background:#10281f;color:#eafff6;border:1px solid #7dffc2;border-radius:16px;padding:14px 18px;font-size:15px;font-weight:700;box-shadow:0 10px 30px rgba(0,0,0,.45);max-width:86vw;text-align:center";
     document.body.appendChild(box);
   }
-  box.textContent=on?("已開啟提醒 · "+name+"\n剩 10 分鐘同 5 分鐘會通知"):("已關閉提醒 · "+name);
+  box.textContent=on?("已開啟提醒 · "+name+"\n剩 10、5 同 1 分鐘會通知"):("已關閉提醒 · "+name);
   box.style.whiteSpace="pre-line";
   box.style.display="block";
   clearTimeout(box._t);
@@ -1042,7 +1043,7 @@ function toggleWatch(card){
     state.watch[key]=1; card.classList.add("watch");
     watchPop(true,label);
     if(window.Notification && Notification.permission!=="granted"){
-      try{ Notification.requestPermission(); }catch(e){}
+      try{ Notification.requestPermission().then(function(p){ if(p!=="granted") watchPop(true,"請允許通知，再將網站加入主畫面，鎖屏先會出橫額"); }); }catch(e){}
     }
     checkAlerts(state._shown||[]);
   }
@@ -1071,7 +1072,7 @@ function checkAlerts(cards){
     var mins=Math.max(0, Math.round((new Date(e.eta)-Date.now())/60000));
     var dest=(e.dest)||c.dest||"";
     var title=(c.kind==="mtr"?c.name:c.route)+" 往 "+dest;
-    [10,5].forEach(function(mark){
+    [10,5,1].forEach(function(mark){
       var id=c._key+"|"+e.eta+"|"+mark;
       if(mins<=mark && mins>=mark-1 && !state.alerted[id]){
         state.alerted[id]=1;
