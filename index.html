@@ -1131,8 +1131,7 @@ function mountCardMaps(cards){
     var bus=document.createElement("div");
     var body=document.createElement("div");
     body.className="veh";
-    body.style.transform="rotate("+hd+"deg)";
-    body.innerHTML=busTop();
+        body.innerHTML=busTop();
     bus.appendChild(body);
     new maplibregl.Marker({element:bus,anchor:"center",rotation:hd,rotationAlignment:"map"}).setLngLat([pos.lng,pos.lat]).addTo(map);
     var pin=document.createElement("div");
