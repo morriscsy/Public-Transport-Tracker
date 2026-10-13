@@ -45,6 +45,10 @@ h1{margin:2px 0 0;font-size:24px;letter-spacing:-.03em;font-weight:750}
 .quick,.tabs{display:flex;gap:8px;overflow:auto;margin:10px 0;padding-bottom:2px}
 .quick button,.tabs button{border:1px solid rgba(255,255,255,.1);background:transparent;color:#fff;border-radius:999px;padding:7px 12px;white-space:nowrap;font-size:13px}
 .tabs button.on{background:#1e2330;color:#f0c36a;border-color:rgba(240,195,106,.4)}
+.regions{display:flex;gap:6px;overflow:auto;margin:0 0 8px;padding-bottom:2px}
+.regions button{border:1px solid rgba(255,255,255,.1);background:transparent;color:#c5bfb4;border-radius:999px;padding:6px 10px;white-space:nowrap;font-size:12px}
+.regions button.on{background:#14261d;color:#7dffc2;border-color:rgba(125,255,194,.55)}
+.rchip{display:inline-block;margin-left:6px;font-size:10px;font-weight:700;color:#7dffc2;background:rgba(125,255,194,.12);border:1px solid rgba(125,255,194,.35);border-radius:999px;padding:1px 6px;vertical-align:middle}
 .tagbar{display:flex;align-items:flex-start;gap:8px;flex-wrap:wrap}
 #tags{flex:1;min-width:0}
 .tag{background:#1a1d27;border-radius:999px;padding:5px 8px 5px 6px;display:inline-flex;align-items:center;gap:6px;margin:0 6px 6px 0;font-size:14px;border:1px solid rgba(240,195,106,.35);cursor:pointer;-webkit-tap-highlight-color:transparent;touch-action:manipulation;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
@@ -217,6 +221,15 @@ h1{margin:2px 0 0;font-size:24px;letter-spacing:-.03em;font-weight:750}
 <button type="button" data-tab="mtr">港鐵</button>
 <button type="button" class="on" data-tab="all">全部</button>
 </div>
+<div class="regions" id="regions">
+<button type="button" class="on" data-region="all">全部路線</button>
+<button type="button" data-region="hk-kln">島 ↔ 九龍</button>
+<button type="button" data-region="hk-nt">島 ↔ 新界</button>
+<button type="button" data-region="kln-nt">九龍 ↔ 新界</button>
+<button type="button" data-region="hk">島內</button>
+<button type="button" data-region="kln">九龍內</button>
+<button type="button" data-region="nt">新界內</button>
+</div>
 <p class="msg" id="msg">搜尋路線或港鐵站，最近項目會留低。</p>
 </div>
 <div id="feed"></div>
@@ -248,7 +261,7 @@ var MTR_STATIONS=[{"c":"ADM","zh":"金鐘","en":"Admiralty","lat":22.27942,"lng"
 var MTR_BY={}; MTR_STATIONS.forEach(function(s){MTR_BY[s.c]=s;});
 var home=null;
 try{var h=JSON.parse(localStorage.getItem("savedHome")||"null"); if(h&&h.lat) home=h;}catch(e){}
-var state={loc:null,mode:"gps",home:home,items:[],tab:"all",kmbStops:{},kmbRoutes:{},ctbRoutes:{},busy:false,cards:[],editing:false};
+var state={loc:null,mode:"gps",home:home,items:[],tab:"all",region:"all",kmbStops:{},kmbRoutes:{},ctbRoutes:{},busy:false,cards:[],editing:false};
 try{state.items=JSON.parse(localStorage.getItem("watchHistory")||"[]");}catch(e){}
 if(!Array.isArray(state.items)) state.items=[];
 function $(id){return document.getElementById(id);}
@@ -512,6 +525,51 @@ $("tabs").addEventListener("click",function(e){
   [].forEach.call($("tabs").querySelectorAll("button"),function(b){b.classList.toggle("on",b.getAttribute("data-tab")===t);});
   paint();
 });
+$("regions").addEventListener("click",function(e){
+  var r=e.target.getAttribute("data-region"); if(!r) return;
+  state.region=r;
+  [].forEach.call($("regions").querySelectorAll("button"),function(b){b.classList.toggle("on",b.getAttribute("data-region")===r);});
+  paint();
+});
+var REGION_WORDS=[
+  ["堅尼地城","hk"],["西營盤","hk"],["上環","hk"],["中環","hk"],["金鐘","hk"],["灣仔","hk"],["銅鑼灣","hk"],["天后","hk"],["炮台山","hk"],["北角","hk"],["鰂魚涌","hk"],["太古","hk"],["西灣河","hk"],["筲箕灣","hk"],["柴灣","hk"],["小西灣","hk"],["香港仔","hk"],["黃竹坑","hk"],["海洋公園","hk"],["鴨脷洲","hk"],["海怡","hk"],["利東","hk"],["赤柱","hk"],["淺水灣","hk"],["薄扶林","hk"],["數碼港","hk"],["香港大學","hk"],["華富","hk"],["置富","hk"],["跑馬地","hk"],["山頂","hk"],["摩頓台","hk"],
+  ["尖沙咀","kln"],["佐敦","kln"],["油麻地","kln"],["旺角","kln"],["太子","kln"],["深水埗","kln"],["長沙灣","kln"],["荔枝角","kln"],["美孚","kln"],["九龍塘","kln"],["石硤尾","kln"],["黃大仙","kln"],["樂富","kln"],["鑽石山","kln"],["彩虹","kln"],["九龍灣","kln"],["牛頭角","kln"],["觀塘","kln"],["藍田","kln"],["油塘","kln"],["啟德","kln"],["紅磡","kln"],["何文田","kln"],["土瓜灣","kln"],["馬頭圍","kln"],["黃埔","kln"],["大角咀","kln"],["奧運","kln"],["南昌","kln"],["柯士甸","kln"],["尖東","kln"],["麗晶","kln"],["坪石","kln"],["啟業","kln"],["寶馬山","hk"],
+  ["荃灣","nt"],["葵芳","nt"],["葵興","nt"],["青衣","nt"],["屯門","nt"],["元朗","nt"],["天水圍","nt"],["上水","nt"],["粉嶺","nt"],["大埔","nt"],["沙田","nt"],["大圍","nt"],["馬鞍山","nt"],["將軍澳","nt"],["坑口","nt"],["寶琳","nt"],["調景嶺","nt"],["康城","nt"],["東涌","nt"],["機場","nt"],["迪士尼","nt"],["烏溪沙","nt"],["火炭","nt"],["太和","nt"],["朗屏","nt"],["錦上路","nt"],["兆康","nt"],["洪水橋","nt"],["大窩口","nt"],["荃灣西","nt"],["西貢","nt"],["馬料水","nt"],["大學站","nt"],["天水圍市中心","nt"]
+];
+function regionOfLatLng(lat,lng){
+  if(!lat||!lng) return "";
+  if(lng<114.12) return "nt";
+  if(lat<22.292 && lng>114.12 && lng<114.30) return "hk";
+  if(lat>=22.292 && lat<22.358 && lng>=114.150 && lng<=114.250) return "kln";
+  return "nt";
+}
+function regionOfName(name){
+  name=String(name||"");
+  var hit=null;
+  MTR_STATIONS.forEach(function(s){ if(name.indexOf(s.zh)>=0 && (!hit || s.zh.length>(hit.zh||"").length)) hit=s; });
+  if(hit) return regionOfLatLng(hit.lat,hit.lng);
+  var best="", len=0;
+  REGION_WORDS.forEach(function(w){ if(name.indexOf(w[0])>=0 && w[0].length>len){ best=w[1]; len=w[0].length; } });
+  return best;
+}
+function regionPair(from,to){
+  if(!from||!to) return "other";
+  if(from===to) return from;
+  return [from,to].sort().join("-");
+}
+function regionLabel(key){
+  return ({"hk-kln":"島↔九龍","hk-nt":"島↔新界","kln-nt":"九龍↔新界",hk:"島內",kln:"九龍內",nt:"新界內",other:"其他"})[key]||"其他";
+}
+function cardRegion(c){
+  var from=regionOfLatLng(c.lat,c.lng)||regionOfName(c.name);
+  var dest=destOf(c);
+  var to=regionOfName(dest);
+  if(c.kind==="mtr" && c.etas && c.etas[0] && c.etas[0].dest){
+    var sta=MTR_STATIONS.filter(function(s){return s.zh===c.etas[0].dest||dest.indexOf(s.zh)>=0;})[0];
+    if(sta) to=regionOfLatLng(sta.lat,sta.lng);
+  }
+  return regionPair(from,to);
+}
 $("homeBtn").onclick=function(){
   if(!state.home){ if($("gate")) $("gate").classList.add("on"); return; }
   if(state.mode!=="home"){
@@ -879,6 +937,7 @@ function paint(){
     if(state.tab==="kmb" && !(c.kind==="bus" && c.co==="KMB")) return false;
     if(state.tab==="ctb" && !(c.kind==="bus" && c.co==="CTB")) return false;
     if(state.tab==="mtr" && c.kind!=="mtr") return false;
+    if(state.region && state.region!=="all" && cardRegion(c)!==state.region) return false;
     if(!state.items.length) return true;
     if(!on.length) return false;
     return on.some(function(it){
@@ -891,7 +950,7 @@ function paint(){
     return;
   }
   if(!cards.length){
-    $("feed").innerHTML='<div class="card">呢一頁暫時無班次。可轉「全部」或行近啲站。</div>';
+    $("feed").innerHTML='<div class="card">呢一頁暫時無班次。可轉「全部」或改路線分類。</div>';
     return;
   }
   var mapN=0;
@@ -900,9 +959,11 @@ function paint(){
     var live=c.etas.some(function(e){return e&&!e.sched;});
     var col=c.kind==="mtr"?(LINE_COLOR[c.line]||"#0d6b4c"):"";
     var title=c.kind==="mtr"?c.name:c.route;
+    var rk=cardRegion(c);
+    var badge='<span class="rchip">'+regionLabel(rk)+'</span>';
     var sub=c.kind==="mtr"
-      ? '<span class="linechip" style="background:'+col+'">'+c.route+'</span><div class="meta">'+c.dist+'米</div>'
-      : '<div class="to">往 <b>'+dest+'</b></div><div class="meta">'+c.coName+' · '+c.dist+'米</div><div class="stopn">'+c.name+'</div>';
+      ? '<span class="linechip" style="background:'+col+'">'+c.route+'</span>'+badge+'<div class="meta">'+c.dist+'米</div>'
+      : '<div class="to">往 <b>'+dest+'</b> '+badge+'</div><div class="meta">'+c.coName+' · '+c.dist+'米</div><div class="stopn">'+c.name+'</div>';
     var mid=c.kind==="bus"?"map"+(mapN++):"";
     return '<article class="card"><div class="cardhead"><div class="cardmain"><div class="namerow">'+icon(c.kind==="mtr"?"mtr":c.co,c.line)+'<div class="bus">'+title+'</div></div>'+sub+
       (c.kind==="mtr"?'<div class="to">往 <b>'+dest+'</b></div>':'')+'</div>'+
