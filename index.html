@@ -160,6 +160,8 @@ h1{margin:2px 0 0;font-size:24px;letter-spacing:-.03em;font-weight:750}
   .cardmap{height:110px}
 }
 </style>
+<link rel="manifest" href="manifest.json">
+<meta name="apple-mobile-web-app-capable" content="yes">
 </head>
 <body>
 <div class="app">
@@ -1050,13 +1052,15 @@ function ping(title, body){
   watchPop(true, title+"\n"+body);
   toast(title+" · "+body, true);
   say(title);
-  try{ navigator.vibrate&&navigator.vibrate([180,80,180]); }catch(e){}
-  try{
-    var a=new Audio("data:audio/wav;base64,UklGRlQAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YTAAAAAoAAAA");
-    a.play();
-  }catch(e){}
+  try{ navigator.vibrate&&navigator.vibrate([200,100,200,100,200]); }catch(e){}
+  var text=title+" · "+body;
+  if(navigator.serviceWorker){
+    navigator.serviceWorker.ready.then(function(reg){
+      return reg.showNotification("StationWise",{body:text,icon:"icon-192.png",badge:"icon-192.png",tag:text,renotify:true});
+    }).catch(function(){});
+  }
   if(window.Notification && Notification.permission==="granted"){
-    try{ new Notification("StationWise",{body:title+" · "+body}); }catch(e){}
+    try{ new Notification("StationWise",{body:text}); }catch(e){}
   }
 }
 function checkAlerts(cards){
@@ -1099,6 +1103,21 @@ function paint(){
     return;
   }
   cards.forEach(function(c){ c._key=cardKey(c); });
+  var same=state._shown && state._shown.length===cards.length && cards.every(function(c,i){return state._shown[i] && state._shown[i]._key===c._key;});
+  if(same){
+    var arts=document.querySelectorAll("#feed .card");
+    cards.forEach(function(c,i){
+      var art=arts[i]; if(!art) return;
+      var times=art.querySelector(".times");
+      if(times) times.innerHTML=[0,1,2].map(function(n){return slot(c.etas[n],n+1);}).join("");
+      var stop=art.querySelector(".stopn"); if(stop) stop.textContent=c.name||"";
+      var meta=art.querySelector(".meta"); if(meta && c.kind!=="mtr") meta.textContent=c.coName+" · "+c.dist+"米";
+    });
+    state._shown=cards;
+    mountCardMaps(cards.filter(function(c){return c.kind==="bus";}));
+    checkAlerts(cards);
+    return;
+  }
   var kept={};
   [].forEach.call(document.querySelectorAll(".cardmap"),function(el){ kept[el.id]=el; el.remove(); });
   $("feed").innerHTML=cards.map(function(c){
@@ -1421,7 +1440,10 @@ function mountCardMaps(cards){
   cards.forEach(function(c,i){
     if(!c.lat||!c.lng) return;
     var el=boxes[i]; if(!el) return;
-    if(el._swMap && el._swMap.getStyle && el.querySelector("canvas")){ updateLiveMap(el._swMap,c); bindMapTouch(el._swMap, el); keep.push(el._swMap); return; }
+    var canvas=el.querySelector("canvas");
+    var dead=!canvas || canvas.width<20 || canvas.clientWidth<20;
+    if(el._swMap && el._swMap.getStyle && !dead){ updateLiveMap(el._swMap,c); bindMapTouch(el._swMap, el); try{el._swMap.resize(); el._swMap.triggerRepaint();}catch(e){} keep.push(el._swMap); return; }
+    if(el._swMap){ try{el._swMap.remove();}catch(e){} el._swMap=null; }
     if(el._swMap){ try{el._swMap.remove();}catch(e){} el._swMap=null; }
     var parts0=routeParts(c);
     var path=c.path&&c.path.length?c.path:[{lat:c.lat,lng:c.lng}];
@@ -1572,6 +1594,7 @@ function tickClock(){
   if($("nowTime")) $("nowTime").textContent=t;
   if($("nowDate")) $("nowDate").textContent=d+" · "+w;
 }
+if('serviceWorker' in navigator){ navigator.serviceWorker.register('sw.js').catch(function(){}); }
 tickClock();
 setInterval(tickClock,1000);
 loadCatalog().then(function(){ renderTags(); useGps(); });
