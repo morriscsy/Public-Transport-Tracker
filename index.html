@@ -533,7 +533,7 @@ $("regions").addEventListener("click",function(e){
   paint();
 });
 var REGION_WORDS=[
-  ["堅尼地城","hk"],["西營盤","hk"],["上環","hk"],["中環","hk"],["金鐘","hk"],["灣仔","hk"],["銅鑼灣","hk"],["天后","hk"],["炮台山","hk"],["北角","hk"],["鰂魚涌","hk"],["太古","hk"],["西灣河","hk"],["筲箕灣","hk"],["柴灣","hk"],["小西灣","hk"],["香港仔","hk"],["黃竹坑","hk"],["海洋公園","hk"],["鴨脷洲","hk"],["海怡","hk"],["利東","hk"],["赤柱","hk"],["淺水灣","hk"],["薄扶林","hk"],["數碼港","hk"],["香港大學","hk"],["華富","hk"],["置富","hk"],["跑馬地","hk"],["山頂","hk"],["摩頓台","hk"],
+  ["堅尼地城","hk"],["西營盤","hk"],["上環","hk"],["中環","hk"],["金鐘","hk"],["灣仔","hk"],["銅鑼灣","hk"],["天后","hk"],["炮台山","hk"],["北角","hk"],["鰂魚涌","hk"],["太古","hk"],["西灣河","hk"],["筲箕灣","hk"],["柴灣","hk"],["小西灣","hk"],["香港仔","hk"],["黃竹坑","hk"],["海洋公園","hk"],["鴨脷洲","hk"],["海怡","hk"],["利東","hk"],["赤柱","hk"],["淺水灣","hk"],["薄扶林","hk"],["數碼港","hk"],["香港大學","hk"],["華富","hk"],["置富","hk"],["跑馬地","hk"],["山頂","hk"],["摩頓台","hk"],["南區","hk"],["田灣","hk"],["石排灣","hk"],["華貴","hk"],["瑪麗醫院","hk"],["摩星嶺","hk"],["深灣","hk"],["漁光","hk"],["石澳","hk"],["舂坎角","hk"],["大潭","hk"],["馬坑","hk"],["鋼綫灣","hk"],["瀑布灣","hk"],["南朗山","hk"],["逸港居","hk"],["雅濤閣","hk"],["黃竹坑站","hk"],["利東邨","hk"],["海怡半島","hk"],["鴨脷洲邨","hk"],["香港仔中心","hk"],
   ["尖沙咀","kln"],["佐敦","kln"],["油麻地","kln"],["旺角","kln"],["太子","kln"],["深水埗","kln"],["長沙灣","kln"],["荔枝角","kln"],["美孚","kln"],["九龍塘","kln"],["石硤尾","kln"],["黃大仙","kln"],["樂富","kln"],["鑽石山","kln"],["彩虹","kln"],["九龍灣","kln"],["牛頭角","kln"],["觀塘","kln"],["藍田","kln"],["油塘","kln"],["啟德","kln"],["紅磡","kln"],["何文田","kln"],["土瓜灣","kln"],["馬頭圍","kln"],["黃埔","kln"],["大角咀","kln"],["奧運","kln"],["南昌","kln"],["柯士甸","kln"],["尖東","kln"],["麗晶","kln"],["坪石","kln"],["啟業","kln"],["寶馬山","hk"],
   ["荃灣","nt"],["葵芳","nt"],["葵興","nt"],["青衣","nt"],["屯門","nt"],["元朗","nt"],["天水圍","nt"],["上水","nt"],["粉嶺","nt"],["大埔","nt"],["沙田","nt"],["大圍","nt"],["馬鞍山","nt"],["將軍澳","nt"],["坑口","nt"],["寶琳","nt"],["調景嶺","nt"],["康城","nt"],["東涌","nt"],["機場","nt"],["迪士尼","nt"],["烏溪沙","nt"],["火炭","nt"],["太和","nt"],["朗屏","nt"],["錦上路","nt"],["兆康","nt"],["洪水橋","nt"],["大窩口","nt"],["荃灣西","nt"],["西貢","nt"],["馬料水","nt"],["大學站","nt"],["天水圍市中心","nt"]
 ];
@@ -562,6 +562,15 @@ function regionLabel(key){
   return ({"hk-kln":"香港島↔九龍","hk-nt":"香港島↔新界","kln-nt":"九龍↔新界",hk:"香港島內",kln:"九龍內",nt:"新界內",other:"其他"})[key]||"其他";
 }
 function cardRegion(c){
+  if(c.kind==="bus"){
+    var a=regionOfName(c.orig)||regionOfName(c.dest);
+    var b=regionOfName(c.dest)||regionOfName(c.orig);
+    if(c.orig && c.dest){
+      a=regionOfName(c.orig);
+      b=regionOfName(c.dest);
+    }
+    if(a && b) return regionPair(a,b);
+  }
   var from=regionOfLatLng(c.lat,c.lng)||regionOfName(c.name);
   var dest=destOf(c);
   var to=regionOfName(dest);
@@ -809,7 +818,7 @@ function kmbNearby(route){
           var d=dist(state.loc.lat,state.loc.lng,Number(stop.lat),Number(stop.long));
           var key=rs.stop+"-"+p.v.bound; if(seen[key]) return; seen[key]=1;
           path.push({lat:Number(stop.lat),lng:Number(stop.long),name:stop.name_tc||stop.name_en||""});
-          all.push({kind:"bus",co:"KMB",coName:"九巴／龍運",route:route,stopId:rs.stop,name:stop.name_tc,nameEn:stop.name_en,lat:Number(stop.lat),lng:Number(stop.long),path:path.slice(-14),dist:Math.round(d),bound:p.v.bound,serviceType:String(p.v.service_type||"1"),dest:p.v.dest_tc||""});
+          all.push({kind:"bus",co:"KMB",coName:"九巴／龍運",route:route,stopId:rs.stop,name:stop.name_tc,nameEn:stop.name_en,lat:Number(stop.lat),lng:Number(stop.long),path:path.slice(-14),dist:Math.round(d),bound:p.v.bound,serviceType:String(p.v.service_type||"1"),orig:p.v.orig_tc||"",dest:p.v.dest_tc||""});
         });
       });
       all.sort(function(a,b){return a.dist-b.dist;});
@@ -838,7 +847,7 @@ function ctbNearby(route){
             var d=dist(state.loc.lat,state.loc.lng,Number(stop.lat),Number(stop.long));
             var key=rs.stop+"-"+bound; if(seen[key]) return; seen[key]=1;
             path.push({lat:Number(stop.lat),lng:Number(stop.long),name:stop.name_tc||stop.name_en||""});
-            out.push({kind:"bus",co:"CTB",coName:"城巴",route:route,stopId:rs.stop,name:stop.name_tc||stop.name_en,nameEn:stop.name_en,lat:Number(stop.lat),lng:Number(stop.long),path:path.slice(-14),dist:Math.round(d),bound:bound,serviceType:"1",dest:bound==="O"?(meta.dest_tc||meta.orig_tc||""):(meta.orig_tc||meta.dest_tc||"")});
+            out.push({kind:"bus",co:"CTB",coName:"城巴",route:route,stopId:rs.stop,name:stop.name_tc||stop.name_en,nameEn:stop.name_en,lat:Number(stop.lat),lng:Number(stop.long),path:path.slice(-14),dist:Math.round(d),bound:bound,serviceType:"1",orig:meta.orig_tc||"",dest:meta.dest_tc||""});
           });
         });
         out.sort(function(a,b){return a.dist-b.dist;});
