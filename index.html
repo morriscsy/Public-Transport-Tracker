@@ -1269,7 +1269,24 @@ function updateLiveMap(map,c){
 function bindMapTouch(map, el){
   if(el._touchBound) return;
   el._touchBound=1;
-  var last=null, dist0=0, zoom0=0;
+  el.style.cursor="grab";
+  var last=null, dist0=0, zoom0=0, mouse=false;
+  el.addEventListener("mousedown", function(e){
+    if(e.button!==0) return;
+    mouse=true; last={x:e.clientX,y:e.clientY};
+    el.style.cursor="grabbing";
+    e.preventDefault();
+  });
+  window.addEventListener("mousemove", function(e){
+    if(!mouse||!last) return;
+    map.panBy([last.x-e.clientX, last.y-e.clientY], {animate:false});
+    last={x:e.clientX,y:e.clientY};
+  });
+  window.addEventListener("mouseup", function(){ mouse=false; last=null; el.style.cursor="grab"; });
+  el.addEventListener("wheel", function(e){
+    e.preventDefault();
+    map.zoomTo(Math.max(11, Math.min(18, map.getZoom()+(e.deltaY<0?0.4:-0.4))), {animate:false});
+  }, {passive:false});
   el.addEventListener("touchstart", function(e){
     if(e.touches.length===1){
       last={x:e.touches[0].clientX,y:e.touches[0].clientY};
@@ -1279,11 +1296,10 @@ function bindMapTouch(map, el){
       zoom0=map.getZoom();
       last=null;
     }
-  }, {passive:true, capture:true});
+  }, {passive:true});
   el.addEventListener("touchmove", function(e){
     if(!e.touches.length) return;
     e.preventDefault();
-    e.stopPropagation();
     if(e.touches.length===1 && last){
       var x=e.touches[0].clientX, y=e.touches[0].clientY;
       map.panBy([last.x-x, last.y-y], {animate:false});
@@ -1292,7 +1308,7 @@ function bindMapTouch(map, el){
       var d=Math.hypot(e.touches[0].clientX-e.touches[1].clientX, e.touches[0].clientY-e.touches[1].clientY);
       map.zoomTo(Math.max(11, Math.min(18, zoom0+Math.log2(d/dist0))), {animate:false});
     }
-  }, {passive:false, capture:true});
+  }, {passive:false});
   el.addEventListener("touchend", function(){ last=null; }, {passive:true});
 }
 function mountCardMaps(cards){
