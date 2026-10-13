@@ -989,7 +989,6 @@ function sortCards(list){
 var watchStore="sw-watch-v2";
 try{ localStorage.removeItem("sw-watch-v1"); }catch(e){}
 state.watch=JSON.parse(localStorage.getItem(watchStore)||"{}");
-state.alerted={};
 function saveWatch(){ localStorage.setItem(watchStore, JSON.stringify(state.watch)); }
 function cardKey(c){ return (c.co||c.kind)+"-"+c.route+"-"+(c.bound||"")+"-"+c.stopId; }
 function bindWatch(){
@@ -1049,19 +1048,22 @@ function toggleWatch(card){
   }
   saveWatch();
 }
-function ping(title, body){
+var alertStore="sw-alerted-v1";
+state.alerted=JSON.parse(localStorage.getItem(alertStore)||"{}");
+function saveAlerted(){ localStorage.setItem(alertStore, JSON.stringify(state.alerted)); }
+function ping(title, body, tag){
   watchPop(true, title+"\n"+body);
   toast(title+" · "+body, true);
   say(title);
-  try{ navigator.vibrate&&navigator.vibrate([200,100,200,100,200]); }catch(e){}
+  try{ navigator.vibrate&&navigator.vibrate([200,100,200]); }catch(e){}
   var text=title+" · "+body;
-  if(navigator.serviceWorker){
-    navigator.serviceWorker.ready.then(function(reg){
-      return reg.showNotification("StationWise",{body:text,icon:"icon-192.png",badge:"icon-192.png",tag:text,renotify:true});
-    }).catch(function(){});
-  }
-  if(window.Notification && Notification.permission==="granted"){
-    try{ new Notification("StationWise",{body:text}); }catch(e){}
+  var opt={body:text,icon:"icon-192.png",badge:"icon-192.png",tag:tag||text,renotify:false};
+  if(navigator.serviceWorker && navigator.serviceWorker.ready){
+    navigator.serviceWorker.ready.then(function(reg){ return reg.showNotification("StationWise", opt); }).catch(function(){
+      if(window.Notification && Notification.permission==="granted"){ try{ new Notification("StationWise", opt); }catch(e){} }
+    });
+  } else if(window.Notification && Notification.permission==="granted"){
+    try{ new Notification("StationWise", opt); }catch(e){}
   }
 }
 function checkAlerts(cards){
@@ -1070,13 +1072,21 @@ function checkAlerts(cards){
     if(!state.watch[c._key]) return;
     var e=c.etas&&c.etas[0]; if(!e||!e.eta) return;
     var mins=Math.max(0, Math.round((new Date(e.eta)-Date.now())/60000));
+    var stamp=new Date(e.eta).getTime();
+    var busKey=c._key+"|bus";
+    var prev=state.alerted[busKey];
+    if(!prev || stamp-prev>180000){
+      state.alerted[busKey]=stamp;
+      [10,5,1].forEach(function(mark){ delete state.alerted[c._key+"|"+mark]; });
+    }
     var dest=(e.dest)||c.dest||"";
     var title=(c.kind==="mtr"?c.name:c.route)+" 往 "+dest;
     [10,5,1].forEach(function(mark){
-      var id=c._key+"|"+e.eta+"|"+mark;
-      if(mins<=mark && mins>=mark-1 && !state.alerted[id]){
+      var id=c._key+"|"+mark;
+      if(mins<=mark && !state.alerted[id]){
         state.alerted[id]=1;
-        ping(title, "第 1 班剩約 "+mark+" 分鐘");
+        saveAlerted();
+        ping(title, "第 1 班剩約 "+mark+" 分鐘", id);
       }
     });
   });
