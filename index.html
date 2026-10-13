@@ -72,7 +72,9 @@ h1{margin:2px 0 0;font-size:24px;letter-spacing:-.03em;font-weight:750}
 .tag .tico svg{width:14px;height:14px}
 .tag button{border:0;background:transparent;color:#9a958b;font-size:16px}
 .msg{color:#9a958b;font-size:12px;min-height:16px}
-.card{background:#14171f;border:1px solid rgba(255,255,255,.1);border-radius:18px;padding:14px;margin:10px 0}
+.card{background:#14171f;border:1px solid rgba(255,255,255,.1);border-radius:18px;padding:14px;margin:10px 0;transition:box-shadow .2s,border-color .2s}
+.card.watch{border-color:#7dffc2;box-shadow:0 0 0 1px #7dffc2,0 0 18px rgba(125,255,194,.55);animation:cardglow 1.6s ease-in-out infinite}
+@keyframes cardglow{50%{box-shadow:0 0 0 1px #7dffc2,0 0 28px rgba(125,255,194,.85)}}
 .top{display:flex;gap:10px;align-items:flex-start}
 .ico{width:36px;height:36px;border-radius:9px;display:flex;align-items:center;justify-content:center;flex:0 0 36px;overflow:hidden;padding:0;background:#111}
 .ico img,.tico img{width:100%;height:100%;object-fit:cover;display:block}
@@ -980,6 +982,61 @@ function sortCards(list){
     return firstEta(a)-firstEta(b);
   });
 }
+
+var watchStore="sw-watch-v1";
+state.watch=JSON.parse(localStorage.getItem(watchStore)||"{}");
+state.alerted={};
+function saveWatch(){ localStorage.setItem(watchStore, JSON.stringify(state.watch)); }
+function bindWatch(){
+  var box=$("feed");
+  if(box._watchBound) return;
+  box._watchBound=1;
+  var last=0, lastEl=null;
+  box.addEventListener("dblclick", function(e){
+    var card=e.target.closest(".card"); if(!card) return;
+    toggleWatch(card);
+  });
+  box.addEventListener("touchend", function(e){
+    var card=e.target.closest(".card"); if(!card) return;
+    var now=Date.now();
+    if(lastEl===card && now-last<320){ toggleWatch(card); last=0; }
+    else { last=now; lastEl=card; }
+  });
+}
+function toggleWatch(card){
+  var key=card.getAttribute("data-key"); if(!key) return;
+  if(state.watch[key]){ delete state.watch[key]; card.classList.remove("watch"); say("已取消提醒"); }
+  else {
+    state.watch[key]=1; card.classList.add("watch");
+    say("已盯住呢班，剩 10 分鐘同 5 分鐘會通知");
+    if(window.Notification && Notification.permission==="default") Notification.requestPermission();
+  }
+  saveWatch();
+}
+function ping(title, body){
+  toast(title+" · "+body, true);
+  say(title);
+  if(window.Notification && Notification.permission==="granted"){
+    try{ new Notification(title,{body:body}); }catch(e){}
+  }
+}
+function checkAlerts(cards){
+  (cards||[]).forEach(function(c){
+    if(!c._key) c._key=(c.co||c.kind)+"-"+c.route+"-"+(c.bound||"")+"-"+c.stopId;
+    if(!state.watch[c._key]) return;
+    var e=c.etas&&c.etas[0]; if(!e||!e.eta) return;
+    var mins=Math.max(0, Math.round((new Date(e.eta)-Date.now())/60000));
+    var dest=(e.dest)||c.dest||"";
+    var title=(c.kind==="mtr"?c.name:c.route)+" 往 "+dest;
+    [10,5].forEach(function(mark){
+      var id=c._key+"|"+e.eta+"|"+mark;
+      if(mins<=mark && mins>mark-1 && !state.alerted[id]){
+        state.alerted[id]=1;
+        ping(title, "第 1 班剩約 "+mark+" 分鐘");
+      }
+    });
+  });
+}
 function paint(){
   var on=state.items.filter(isOn);
   var cards=sortCards(state.cards.filter(function(c){
@@ -1013,7 +1070,7 @@ function paint(){
       ? '<span class="linechip" style="background:'+col+'">'+c.route+'</span><div class="meta">'+c.dist+'米</div>'
       : '<div class="to">往 <b>'+dest+'</b></div><div class="meta">'+c.coName+' · '+c.dist+'米</div><div class="stopn">'+c.name+'</div>';
     var mid=c.kind==="bus"?("map-"+String(c.co||"")+"-"+String(c.route||"")+"-"+String(c.bound||"")+"-"+String(c.stopId||"").replace(/[^a-zA-Z0-9_-]/g,"_")):"";
-    return '<article class="card"><div class="cardhead"><div class="cardmain"><div class="namerow">'+icon(c.kind==="mtr"?"mtr":c.co,c.line)+'<div class="bus">'+title+'</div></div>'+sub+
+    return '<article class="card'+(state.watch&&state.watch[c._key]?' watch':'')+'" data-key="'+c._key+'"><div class="cardhead"><div class="cardmain"><div class="namerow">'+icon(c.kind==="mtr"?"mtr":c.co,c.line)+'<div class="bus">'+title+'</div></div>'+sub+
       (c.kind==="mtr"?'<div class="to">往 <b>'+dest+'</b></div>':'')+'</div>'+
       '<div class="times mini">'+[0,1,2].map(function(i){return slot(c.etas[i],i+1);}).join("")+'</div></div>'+
       (mid?'<div class="cardmap" id="'+mid+'"></div>':'')+'</article>';
@@ -1024,8 +1081,11 @@ function paint(){
       fresh.parentNode.replaceChild(kept[el.id], fresh);
     }
   });
+  cards.forEach(function(c){ c._key=(c.co||c.kind)+"-"+c.route+"-"+(c.bound||"")+"-"+c.stopId; });
   state._shown=cards;
   mountCardMaps(cards.filter(function(c){return c.kind==="bus";}));
+  bindWatch();
+  checkAlerts(cards);
 }
 function busSvg(view){
   var side='<svg viewBox="0 0 96 56" width="58" height="34">'+
@@ -1483,6 +1543,7 @@ setInterval(function(){
   var boxes=document.querySelectorAll(".card .times");
   var maps=document.querySelectorAll(".cardmap");
   var mi=0;
+  checkAlerts(shown);
   shown.forEach(function(c,i){
     if(boxes[i]) boxes[i].innerHTML=[0,1,2].map(function(n){return slot(c.etas[n],n+1);}).join("");
     if(c.kind==="bus"){
