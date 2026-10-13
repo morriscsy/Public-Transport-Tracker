@@ -647,11 +647,19 @@ function useGps(){
 }
 function scanGpsThenRefresh(){
   if(state.mode!=="gps" || !navigator.geolocation){ if(state.items.length) refresh(); return; }
+  var line=$("locLine");
+  var prev=line?line.textContent:"";
+  if(line && prev.indexOf("掃描")<0) line.textContent=prev.replace(/ · 掃描中$/,"")+" · 掃描中";
   navigator.geolocation.getCurrentPosition(function(pos){
     state.loc={lat:pos.coords.latitude,lng:pos.coords.longitude,acc:pos.coords.accuracy||0};
     state._gpsAt=Date.now();
+    if(line) line.textContent=(prev||"已用即時定位").replace(/ · 掃描中$/,"")+" · 已更新";
+    setTimeout(function(){ if(line && state.mode==="gps") line.textContent=(prev||"已用即時定位").replace(/ · 掃描中$/,""); },1600);
     refresh();
-  },function(){ if(state.loc) refresh(); },{enableHighAccuracy:true,timeout:12000,maximumAge:0});
+  },function(){
+    if(line) line.textContent=(prev||"已用即時定位").replace(/ · 掃描中$/,"");
+    if(state.loc) refresh();
+  },{enableHighAccuracy:true,timeout:12000,maximumAge:0});
 }
 $("gpsBtn").onclick=useGps;
 $("locForm").addEventListener("submit",function(e){e.preventDefault(); searchPlace($("locQ").value);});
@@ -1184,7 +1192,7 @@ function mountCardMaps(cards){
       container:el,
       style:"https://tiles.openfreemap.org/styles/positron",
       center:[pos.lng,pos.lat],
-      zoom:14.1,
+      zoom:13.6,
       attributionControl:false,
       dragRotate:false,
       pitchWithRotate:false,
