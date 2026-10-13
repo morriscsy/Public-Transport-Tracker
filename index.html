@@ -983,23 +983,32 @@ function sortCards(list){
   });
 }
 
-var watchStore="sw-watch-v1";
+var watchStore="sw-watch-v2";
+try{ localStorage.removeItem("sw-watch-v1"); }catch(e){}
 state.watch=JSON.parse(localStorage.getItem(watchStore)||"{}");
 state.alerted={};
 function saveWatch(){ localStorage.setItem(watchStore, JSON.stringify(state.watch)); }
+function cardKey(c){ return (c.co||c.kind)+"-"+c.route+"-"+(c.bound||"")+"-"+c.stopId; }
 function bindWatch(){
   var box=$("feed");
   if(box._watchBound) return;
   box._watchBound=1;
-  var last=0, lastEl=null;
-  box.addEventListener("dblclick", function(e){
-    var card=e.target.closest(".card"); if(!card) return;
+  var last=0, lastEl=null, lock=0;
+  function hit(card){
+    if(!card) return;
+    var now=Date.now();
+    if(now-lock<700) return;
+    lock=now;
     toggleWatch(card);
-  });
+  }
+  document.addEventListener("dblclick", function(e){
+    var card=e.target.closest&&e.target.closest(".card");
+    if(card && box.contains(card)) hit(card);
+  }, true);
   box.addEventListener("touchend", function(e){
     var card=e.target.closest(".card"); if(!card) return;
     var now=Date.now();
-    if(lastEl===card && now-last<320){ toggleWatch(card); last=0; }
+    if(lastEl===card && now-last<340){ hit(card); last=0; lastEl=null; }
     else { last=now; lastEl=card; }
   });
 }
@@ -1022,24 +1031,37 @@ function toggleWatch(card){
   var name=(card.querySelector(".bus")||{}).textContent||"呢班";
   var dest=(card.querySelector(".to b")||{}).textContent||"";
   var label=name+(dest?(" 往 "+dest):"");
-  if(state.watch[key]){ delete state.watch[key]; card.classList.remove("watch"); watchPop(false,label); }
-  else {
+  if(state.watch[key]){
+    delete state.watch[key];
+    card.classList.remove("watch");
+    Object.keys(state.alerted).forEach(function(k){ if(k.indexOf(key+"|")===0) delete state.alerted[k]; });
+    watchPop(false,label);
+  } else {
     state.watch[key]=1; card.classList.add("watch");
     watchPop(true,label);
-    if(window.Notification && Notification.permission==="default") Notification.requestPermission();
+    if(window.Notification && Notification.permission!=="granted"){
+      try{ Notification.requestPermission(); }catch(e){}
+    }
+    checkAlerts(state._shown||[]);
   }
   saveWatch();
 }
 function ping(title, body){
+  watchPop(true, title+"\n"+body);
   toast(title+" · "+body, true);
   say(title);
+  try{ navigator.vibrate&&navigator.vibrate([180,80,180]); }catch(e){}
+  try{
+    var a=new Audio("data:audio/wav;base64,UklGRlQAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YTAAAAAoAAAA");
+    a.play();
+  }catch(e){}
   if(window.Notification && Notification.permission==="granted"){
-    try{ new Notification(title,{body:body}); }catch(e){}
+    try{ new Notification("StationWise",{body:title+" · "+body}); }catch(e){}
   }
 }
 function checkAlerts(cards){
   (cards||[]).forEach(function(c){
-    if(!c._key) c._key=(c.co||c.kind)+"-"+c.route+"-"+(c.bound||"")+"-"+c.stopId;
+    c._key=cardKey(c);
     if(!state.watch[c._key]) return;
     var e=c.etas&&c.etas[0]; if(!e||!e.eta) return;
     var mins=Math.max(0, Math.round((new Date(e.eta)-Date.now())/60000));
@@ -1047,7 +1069,7 @@ function checkAlerts(cards){
     var title=(c.kind==="mtr"?c.name:c.route)+" 往 "+dest;
     [10,5].forEach(function(mark){
       var id=c._key+"|"+e.eta+"|"+mark;
-      if(mins<=mark && mins>mark-1 && !state.alerted[id]){
+      if(mins<=mark && mins>=mark-1 && !state.alerted[id]){
         state.alerted[id]=1;
         ping(title, "第 1 班剩約 "+mark+" 分鐘");
       }
@@ -1076,7 +1098,7 @@ function paint(){
     $("feed").innerHTML='<div class="card">呢一頁暫時無班次。可轉「全部」或改路線分類。</div>';
     return;
   }
-  cards.forEach(function(c){ c._key=(c.co||c.kind)+"-"+c.route+"-"+(c.bound||"")+"-"+c.stopId+"-"+String((c.etas&&c.etas[0]&&c.etas[0].dest)||c.dest||"").slice(0,10); });
+  cards.forEach(function(c){ c._key=cardKey(c); });
   var kept={};
   [].forEach.call(document.querySelectorAll(".cardmap"),function(el){ kept[el.id]=el; el.remove(); });
   $("feed").innerHTML=cards.map(function(c){
