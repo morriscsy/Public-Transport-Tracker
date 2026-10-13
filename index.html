@@ -1197,6 +1197,7 @@ function updateLiveMap(map,c){
     if(state.loc && map._you) map._you.setLngLat([state.loc.lng,state.loc.lat]);
     var pin=map.getContainer().querySelector(".herepin");
     if(pin) pin.innerHTML=nearHint(path,pos,c.name);
+    try{ map.resize(); }catch(e){}
     setRouteParts(map,path,prog);
   }catch(e){}
 }
