@@ -192,7 +192,8 @@ h1{margin:2px 0 0;font-size:24px;letter-spacing:-.03em;font-weight:750}
 .guide.on{display:flex}
 .guidebox{width:min(440px,100%);background:#14171f;border:1px solid rgba(125,255,194,.35);border-radius:22px;padding:18px 16px 14px;box-shadow:0 16px 40px rgba(0,0,0,.45)}
 .guidebox h3{margin:0 0 6px;font-size:18px}
-.guidebox p{margin:0 0 14px;color:#c9c3b8;font-size:14px;line-height:1.45}
+.guidebox p{margin:0 0 12px;color:#c9c3b8;font-size:14px;line-height:1.45}
+.gshot{width:100%;height:210px;object-fit:cover;object-position:top;border-radius:14px;margin:0 0 12px;background:#0e1116;border:1px solid rgba(255,255,255,.08)}
 .gdots{display:flex;gap:6px;margin-bottom:12px}
 .gdots i{width:7px;height:7px;border-radius:50%;background:#343842}
 .gdots i.on{background:#7dffc2}
@@ -285,7 +286,7 @@ h1{margin:2px 0 0;font-size:24px;letter-spacing:-.03em;font-weight:750}
 </div>
 <p class="msg" id="msg">搜尋路線或港鐵站，最近項目會留低。</p>
 </div>
-<div id="guide" class="guide"><div class="guidebox"><div class="gdots"></div><h3></h3><p></p><div class="gacts"><button class="gskip" type="button">跳過</button><button class="gnext" type="button">下一步</button></div></div></div><div id="feed"></div>
+<div id="guide" class="guide"><div class="guidebox"><div class="gdots"></div><img class="gshot" alt=""><h3></h3><p></p><div class="gacts"><button class="gskip" type="button">跳過</button><button class="gnext" type="button">下一步</button></div></div></div><div id="feed"></div>
 <p class="fine">九巴／龍運／城巴／港鐵公開資料 · 「原定班次」= 時間表，並非 GPS 實時車</p>
 </div>
 <div class="gate" id="gate">
@@ -1868,25 +1869,26 @@ tickClock();
 setInterval(tickClock,1000);
 
 var GUIDE=[
-  ["歡迎用 StationWise","搜尋巴士路線或港鐵站，就會顯示你附近嘅即時到站。"],
-  ["撳開卡片","撳巴士卡可以展開全程站。預設顯示你最近站前 5 站、後 2 站。"],
-  ["撳站跳地圖","撳某個站名，即時地圖會飛去嗰個站。橙色係你最近站，綠色係巴士而家附近。"],
-  ["左掃開提醒","向左掃卡片，可以開始或取消 10、5、1 分鐘到站提醒。"],
-  ["定位","撳「開啟定位」用而家位置。都可以設定常用位置。"]
+  ["guide/g1.jpg","搜尋路線","輸入巴士號碼或港鐵站，撳加入，就會顯示你附近嘅即時到站。"],
+  ["guide/g2.jpg","撳開卡片","撳巴士卡展開全程站。預設顯示你最近站前 5 站、後 2 站。"],
+  ["guide/g3.jpg","撳站跳地圖","撳某個站名，即時地圖會去到嗰個站。橙色係你最近站。"],
+  ["guide/g4.jpg","左掃開提醒","向左掃卡片，可以開始或取消 10、5、1 分鐘到站提醒。"],
+  ["guide/g5.jpg","開啟定位","撳「開啟定位」用而家位置，也可以設定常用位置。"]
 ];
 function showGuide(i){
   var box=$("guide"); if(!box) return;
   box.classList.add("on");
   box._i=i;
   var g=GUIDE[i];
-  box.querySelector("h3").textContent=g[0];
-  box.querySelector("p").textContent=g[1];
+  box.querySelector(".gshot").src=g[0];
+  box.querySelector("h3").textContent=g[1];
+  box.querySelector("p").textContent=g[2];
   box.querySelector(".gdots").innerHTML=GUIDE.map(function(_,n){return '<i class="'+(n===i?'on':'')+'"></i>';}).join("");
   box.querySelector(".gnext").textContent=i===GUIDE.length-1?"開始使用":"下一步";
 }
 function closeGuide(){
   var box=$("guide"); if(box) box.classList.remove("on");
-  try{ localStorage.setItem("sw-guide","1"); }catch(e){}
+  try{ localStorage.setItem("sw-guide-v2","1"); }catch(e){}
 }
 (function(){
   var box=$("guide"); if(!box) return;
@@ -1895,7 +1897,7 @@ function closeGuide(){
     var i=(box._i||0)+1;
     if(i>=GUIDE.length) closeGuide(); else showGuide(i);
   };
-  if(!localStorage.getItem("sw-guide")) setTimeout(function(){ showGuide(0); }, 600);
+  if(!localStorage.getItem("sw-guide-v2")) setTimeout(function(){ showGuide(0); }, 600);
 })();
 
 loadCatalog().then(function(){ renderTags(); useGps(); });
