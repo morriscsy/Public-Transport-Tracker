@@ -80,17 +80,17 @@ h1{margin:2px 0 0;font-size:24px;letter-spacing:-.03em;font-weight:750}
 .card.open .stops-wrap{grid-template-rows:1fr;opacity:1}
 .stops-inner{overflow:hidden}
 .stops-title{font-size:12px;color:#9a958b;margin:10px 2px 4px;font-weight:650}
-.stops-list{list-style:none;margin:0;padding:2px 2px 6px;max-height:240px;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain}
+.stops-list{list-style:none;margin:0;padding:2px 2px 6px;max-height:256px;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain}
 .stop-row{display:flex;gap:10px;align-items:flex-start;padding:7px 2px;font-size:13px;color:#b7b2a8;position:relative}
 .stop-row.past{color:#6d6962}
-.stop-row.here{color:#7dffc2;font-weight:750}
+.stop-row.here{color:#ffb020;font-weight:800;text-shadow:0 0 8px rgba(255,176,32,.9),0 0 16px rgba(255,140,0,.55)}
 .stop-row.pick{background:rgba(240,195,106,.12);border-radius:8px;color:#f0c36a}
 .stop-row.pick .stop-dot{background:#f0c36a;box-shadow:0 0 0 4px rgba(240,195,106,.25)}
 .stop-dot{width:10px;height:10px;border-radius:50%;background:#3a3f4a;margin-top:4px;flex:0 0 10px;position:relative;z-index:1}
-.stop-row.here .stop-dot{background:#7dffc2;box-shadow:0 0 0 4px rgba(125,255,194,.22)}
+.stop-row.here .stop-dot{background:#ffb020;box-shadow:0 0 0 4px rgba(255,176,32,.35),0 0 10px rgba(255,140,0,.8)}
 .stop-row.past .stop-dot{background:#5a564e}
 .stop-row:not(:last-child) .stop-dot::after{content:"";position:absolute;left:4px;top:12px;width:2px;bottom:-16px;background:#2c3038}
-.stop-row.here:not(:last-child) .stop-dot::after{background:#7dffc2}
+.stop-row.here:not(:last-child) .stop-dot::after{background:#ffb020}
 .stopn-hint{font-size:11px;color:#7a756b;margin-top:4px}
 .card.watch{border-color:#7dffc2;box-shadow:0 0 0 1px #7dffc2,0 0 18px rgba(125,255,194,.55);animation:cardglow 1.6s ease-in-out infinite}
 @keyframes cardglow{50%{box-shadow:0 0 0 1px #7dffc2,0 0 28px rgba(125,255,194,.85)}}
@@ -1151,37 +1151,62 @@ function stopsPanel(c){
   return '<div class="stops-wrap"><div class="stops-inner"><div class="stops-title">全程 '+list.length+' 站'+(here>=0?(" · 你喺第 "+(here+1)+" 站"):"")+'</div><ol class="stops-list">'+
     list.map(function(st,i){
       var cls=i===here?"here":(here>=0&&i<here?"past":"");
-      return '<li class="stop-row '+cls+'" data-lat="'+(st.lat||'')+'" data-lng="'+(st.lng||'')+'"><span class="stop-dot"></span><span>'+(i+1)+'. '+(st.name||"")+'</span></li>';
+      return '<li class="stop-row '+cls+'" data-i="'+i+'" data-lat="'+(st.lat||'')+'" data-lng="'+(st.lng||'')+'"><span class="stop-dot"></span><span class="stopnm">'+(i+1)+'. '+(st.name||"")+'</span></li>';
     }).join("")+'</ol></div></div>';
+}
+function focusStop(card,row){
+  if(!card||!row) return;
+  [].forEach.call(card.querySelectorAll(".stop-row.pick"),function(x){x.classList.remove("pick");});
+  row.classList.add("pick");
+  var lat=Number(row.getAttribute("data-lat")), lng=Number(row.getAttribute("data-lng"));
+  var mapEl=card.querySelector(".cardmap");
+  var map=mapEl&&mapEl._swMap;
+  if(!map||!lat||!lng) return;
+  map._holdView=1;
+  try{ map.jumpTo({center:[lng,lat], zoom:15.4}); }catch(e){}
+  try{ map.easeTo({center:[lng,lat], zoom:15.4, duration:500, essential:true}); }catch(e){}
+  if(map._focus){ map._focus.setLngLat([lng,lat]); }
+  else {
+    var dot=document.createElement("div");
+    dot.style.cssText="width:16px;height:16px;border-radius:50%;background:#ffb020;border:2px solid #fff;box-shadow:0 0 0 5px rgba(255,176,32,.4),0 0 12px rgba(255,140,0,.8)";
+    map._focus=new maplibregl.Marker({element:dot,anchor:"center"}).setLngLat([lng,lat]).addTo(map);
+  }
+}
+function alignStopWindow(card){
+  var list=card&&card.querySelector(".stops-list");
+  var cur=card&&card.querySelector(".stop-row.here");
+  if(!list||!cur) return;
+  var rowH=cur.offsetHeight||32;
+  list.scrollTop=Math.max(0, cur.offsetTop-rowH*5);
 }
 function bindExpand(){
   var box=$("feed");
   if(box._exp) return;
   box._exp=1;
   state.open=state.open||{};
-  var last=0;
+  var last=0, sx=0, sy=0, moved=false;
+  box.addEventListener("touchstart", function(e){
+    var t=e.touches&&e.touches[0]; if(!t) return;
+    sx=t.clientX; sy=t.clientY; moved=false;
+  }, {passive:true});
+  box.addEventListener("touchmove", function(e){
+    var t=e.touches&&e.touches[0]; if(!t) return;
+    if(Math.abs(t.clientX-sx)>8||Math.abs(t.clientY-sy)>8) moved=true;
+  }, {passive:true});
+  box.addEventListener("touchend", function(e){
+    var row=e.target.closest&&e.target.closest(".stop-row");
+    if(!row||moved) return;
+    e.preventDefault();
+    focusStop(row.closest(".card"), row);
+  }, {passive:false});
   box.addEventListener("click", function(e){
     var row=e.target.closest(".stop-row");
     if(row){
-      e.stopPropagation();
-      var card=row.closest(".card"); if(!card) return;
-      [].forEach.call(card.querySelectorAll(".stop-row.pick"),function(x){x.classList.remove("pick");});
-      row.classList.add("pick");
-      var lat=Number(row.getAttribute("data-lat")), lng=Number(row.getAttribute("data-lng"));
-      var mapEl=card.querySelector(".cardmap");
-      var map=mapEl&&mapEl._swMap;
-      if(map && lat && lng){
-        map.flyTo({center:[lng,lat], zoom:Math.max(map.getZoom(),15.2), duration:650, essential:true});
-        if(map._focus){ map._focus.setLngLat([lng,lat]); }
-        else {
-          var dot=document.createElement("div");
-          dot.style.cssText="width:14px;height:14px;border-radius:50%;background:#f0c36a;border:2px solid #fff;box-shadow:0 0 0 4px rgba(240,195,106,.35)";
-          map._focus=new maplibregl.Marker({element:dot,anchor:"center"}).setLngLat([lng,lat]).addTo(map);
-        }
-      }
+      e.preventDefault(); e.stopPropagation();
+      focusStop(row.closest(".card"), row);
       return;
     }
-    if(e.target.closest(".cardmap")||e.target.closest(".mappad")||e.target.closest(".times")) return;
+    if(e.target.closest(".cardmap")||e.target.closest(".mappad")||e.target.closest(".times")||e.target.closest(".stops-list")) return;
     var card=e.target.closest(".card"); if(!card) return;
     var now=Date.now();
     if(now-last<280) return;
@@ -1190,11 +1215,7 @@ function bindExpand(){
     card.classList.toggle("open");
     if(card.classList.contains("open")){
       state.open[key]=1;
-      setTimeout(function(){
-        var list=card.querySelector(".stops-list");
-        var cur=card.querySelector(".stop-row.here");
-        if(list && cur) list.scrollTop=Math.max(0, cur.offsetTop-70);
-      }, 380);
+      setTimeout(function(){ alignStopWindow(card); }, 60);
     } else delete state.open[key];
   });
 }
@@ -1262,6 +1283,7 @@ function paint(){
   mountCardMaps(cards.filter(function(c){return c.kind==="bus";}));
   bindWatch();
   bindExpand();
+  [].forEach.call(document.querySelectorAll('#feed .card.open'), alignStopWindow);
   checkAlerts(cards);
 }
 function busSvg(view){
