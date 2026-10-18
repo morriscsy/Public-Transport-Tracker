@@ -194,9 +194,9 @@ h1{margin:2px 0 0;font-size:24px;letter-spacing:-.03em;font-weight:750}
 .guidebox h3{margin:0 0 6px;font-size:18px}
 .guidebox p{margin:0 0 12px;color:#c9c3b8;font-size:14px;line-height:1.45}
 .gshot{width:100%;height:280px;object-fit:contain;object-position:center;border-radius:14px;margin:0 0 12px;background:#0e1116;border:1px solid rgba(255,255,255,.08)}
-.locrow{display:flex;align-items:center;justify-content:space-between;gap:8px}
-.locrow .sub{margin:0}
-.helpbtn{width:34px;height:34px;border-radius:50%;border:1px solid #7dffc2;background:rgba(125,255,194,.12);color:#7dffc2;font-weight:800;font-size:18px;flex:0 0 34px}
+.locrow{position:relative;min-height:36px;margin:0 0 8px}
+.locrow .sub{margin:0;padding-right:78px}
+.helpbtn{position:absolute;right:0;top:50%;transform:translateY(-50%);height:32px;padding:0 12px;border-radius:16px;border:0;background:#7dffc2;color:#10281f;font-weight:800;font-size:13px;z-index:5}
 .gdots{display:flex;gap:6px;margin-bottom:12px}
 .gdots i{width:7px;height:7px;border-radius:50%;background:#343842}
 .gdots i.on{background:#7dffc2}
@@ -248,7 +248,7 @@ h1{margin:2px 0 0;font-size:24px;letter-spacing:-.03em;font-weight:750}
   </div>
 </div>
 <div class="topbar">
-<div class="locrow"><p class="sub" id="locLine">正在開啟定位…</p><button class="helpbtn" id="helpBtn" type="button" aria-label="功能導覽">?</button></div>
+<div class="locrow"><p class="sub" id="locLine">正在開啟定位…</p><button class="helpbtn" id="helpBtn" type="button">導覽</button></div>
 <div class="row">
 <button class="ghost on" id="gpsBtn" type="button">開啟定位</button>
 <button class="ghost" id="homeBtn" type="button">我的常用位置</button>
@@ -1896,12 +1896,13 @@ function closeGuide(){
 (function(){
   var box=$("guide"); if(!box) return;
   box.querySelector(".gskip").onclick=closeGuide;
-  var help=$("helpBtn"); if(help) help.onclick=function(){ showGuide(0); };
+  
   box.querySelector(".gnext").onclick=function(){
     var i=(box._i||0)+1;
     if(i>=GUIDE.length) closeGuide(); else showGuide(i);
   };
-  if(!localStorage.getItem("sw-guide-v4")) setTimeout(function(){ showGuide(0); }, 600);
+  var help=$("helpBtn"); if(help) help.onclick=function(){ showGuide(0); };
+if(!localStorage.getItem("sw-guide-v4")) setTimeout(function(){ showGuide(0); }, 600);
 })();
 
 loadCatalog().then(function(){ renderTags(); useGps(); });
