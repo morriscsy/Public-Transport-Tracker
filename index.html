@@ -72,6 +72,12 @@ h1{margin:2px 0 0;font-size:24px;letter-spacing:-.03em;font-weight:750}
 .tag .tico svg{width:14px;height:14px}
 .tag button{border:0;background:transparent;color:#9a958b;font-size:16px}
 .msg{color:#9a958b;font-size:12px;min-height:16px}
+
+.cardwrap{position:relative;overflow:hidden;border-radius:18px;margin:10px 0}
+.cardwrap .card{margin:0;position:relative;z-index:1;transition:transform .28s cubic-bezier(.2,.8,.2,1);will-change:transform}
+.alertbtn{position:absolute;right:0;top:0;bottom:0;width:108px;border:0;color:#fff;font-weight:800;font-size:14px;z-index:0;display:flex;align-items:center;justify-content:center;text-align:center;padding:0 10px;line-height:1.25}
+.alertbtn.start{background:#1f8a4c}
+.alertbtn.cancel{background:#d64545}
 .card{background:#14171f;border:1px solid rgba(255,255,255,.1);border-radius:18px;padding:14px;margin:10px 0;transition:box-shadow .2s,border-color .2s}
 .cardhead{cursor:pointer}
 .chev{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;background:rgba(255,255,255,.06);color:#c5bfb4;font-size:12px;margin-left:6px;transition:transform .35s ease,background .2s;flex:0 0 22px}
@@ -1012,27 +1018,67 @@ try{ localStorage.removeItem("sw-watch-v1"); }catch(e){}
 state.watch=JSON.parse(localStorage.getItem(watchStore)||"{}");
 function saveWatch(){ localStorage.setItem(watchStore, JSON.stringify(state.watch)); }
 function cardKey(c){ return (c.co||c.kind)+"-"+c.route+"-"+(c.bound||"")+"-"+c.stopId; }
+function setSwipe(wrap, open){
+  var card=wrap.querySelector(".card"); if(!card) return;
+  card.style.transform=open?"translateX(-108px)":"";
+  wrap.classList.toggle("swiped", !!open);
+}
 function bindWatch(){
   var box=$("feed");
   if(box._watchBound) return;
   box._watchBound=1;
-  var last=0, lastEl=null, lock=0;
-  function hit(card){
-    if(!card) return;
-    var now=Date.now();
-    if(now-lock<700) return;
-    lock=now;
-    toggleWatch(card);
+  var drag=null;
+  box.addEventListener("touchstart", function(e){
+    var wrap=e.target.closest(".cardwrap"); if(!wrap) return;
+    if(e.target.closest(".stops-list")||e.target.closest(".cardmap")||e.target.closest(".mappad")) return;
+    var t=e.touches[0];
+    drag={wrap:wrap, x:t.clientX, y:t.clientY, dx:0, lock:""};
+  }, {passive:true});
+  box.addEventListener("touchmove", function(e){
+    if(!drag) return;
+    var t=e.touches[0];
+    var dx=t.clientX-drag.x, dy=t.clientY-drag.y;
+    if(!drag.lock){
+      if(Math.abs(dx)<8 && Math.abs(dy)<8) return;
+      drag.lock=Math.abs(dx)>Math.abs(dy)?"x":"y";
+    }
+    if(drag.lock!=="x") return;
+    e.preventDefault();
+    drag.dx=dx;
+    var base=drag.wrap.classList.contains("swiped")?-108:0;
+    var x=Math.max(-108, Math.min(0, base+dx));
+    drag.wrap.querySelector(".card").style.transition="none";
+    drag.wrap.querySelector(".card").style.transform="translateX("+x+"px)";
+  }, {passive:false});
+  function endSwipe(){
+    if(!drag) return;
+    var wrap=drag.wrap, card=wrap.querySelector(".card");
+    card.style.transition="";
+    if(drag.lock==="x"){
+      var open=drag.dx<-36 || (wrap.classList.contains("swiped") && drag.dx<24);
+      setSwipe(wrap, open);
+    }
+    drag=null;
   }
-  document.addEventListener("dblclick", function(e){
-    var card=e.target.closest&&e.target.closest(".card");
-    if(card && box.contains(card)) hit(card);
-  }, true);
-  box.addEventListener("touchend", function(e){
-    var card=e.target.closest(".card"); if(!card) return;
-    var now=Date.now();
-    if(lastEl===card && now-last<340){ hit(card); last=0; lastEl=null; }
-    else { last=now; lastEl=card; }
+  box.addEventListener("touchend", endSwipe);
+  box.addEventListener("touchcancel", endSwipe);
+  box.addEventListener("click", function(e){
+    var btn=e.target.closest(".alertbtn");
+    if(btn){
+      e.preventDefault(); e.stopPropagation();
+      var wrap=btn.closest(".cardwrap");
+      var card=wrap.querySelector(".card");
+      toggleWatch(card);
+      var on=card.classList.contains("watch");
+      btn.textContent=on?"取消提醒":"開始提醒";
+      btn.className="alertbtn "+(on?"cancel":"start");
+      setTimeout(function(){ setSwipe(wrap, false); }, 180);
+      return;
+    }
+    var wrap=e.target.closest(".cardwrap");
+    if(wrap && wrap.classList.contains("swiped") && !e.target.closest(".alertbtn")){
+      setSwipe(wrap, false);
+    }
   });
 }
 function watchPop(on, name){
@@ -1268,10 +1314,11 @@ function paint(){
       ? '<span class="linechip" style="background:'+col+'">'+c.route+'</span><div class="meta">'+c.dist+'米</div>'
       : '<div class="to">往 <b>'+dest+'</b></div><div class="meta">'+c.coName+' · '+c.dist+'米</div><div class="stopn">'+c.name+'</div>';
     var mid=c.kind==="bus"?("map-"+String(c.co||"")+"-"+String(c.route||"")+"-"+String(c.bound||"")+"-"+String(c.stopId||"").replace(/[^a-zA-Z0-9_-]/g,"_")):"";
-    return '<article class="card'+(state.watch&&state.watch[c._key]?' watch':'')+(state.open&&state.open[c._key]?' open':'')+'" data-key="'+c._key+'"><div class="cardhead"><div class="cardmain"><div class="namerow">'+icon(c.kind==="mtr"?"mtr":c.co,c.line)+'<div class="bus">'+title+'</div><span class="chev">▾</span></div>'+sub+
+    var watching=!!(state.watch&&state.watch[c._key]);
+    return '<div class="cardwrap" data-key="'+c._key+'"><button class="alertbtn '+(watching?'cancel':'start')+'" type="button">'+(watching?'取消提醒':'開始提醒')+'</button><article class="card'+(watching?' watch':'')+(state.open&&state.open[c._key]?' open':'')+'" data-key="'+c._key+'"><div class="cardhead"><div class="cardmain"><div class="namerow">'+icon(c.kind==="mtr"?"mtr":c.co,c.line)+'<div class="bus">'+title+'</div><span class="chev">▾</span></div>'+sub+
       (c.kind==="mtr"?'<div class="to">往 <b>'+dest+'</b></div>':'')+'</div>'+
       '<div class="times mini">'+[0,1,2].map(function(i){return slot(c.etas[i],i+1);}).join("")+'</div></div>'+
-      (mid?'<div class="cardmap" id="'+mid+'"></div>':'')+stopsPanel(c)+'</article>';
+      (mid?'<div class="cardmap" id="'+mid+'"></div>':'')+stopsPanel(c)+'</article></div>';
   }).join("");
   [].forEach.call(document.querySelectorAll(".cardmap"),function(el){
     if(kept[el.id]){
