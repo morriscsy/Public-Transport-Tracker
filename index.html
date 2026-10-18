@@ -130,7 +130,7 @@ h1{margin:2px 0 0;font-size:24px;letter-spacing:-.03em;font-weight:750}
 .flowdot{width:8px;height:8px;border-radius:50%;background:#eafff6;box-shadow:0 0 6px 3px rgba(125,255,194,.95),0 0 14px 6px rgba(125,255,194,.55);pointer-events:none}
 .veh{width:26px;height:66px;transform-origin:50% 50%;filter:drop-shadow(0 6px 6px rgba(0,0,0,.45))}
 .veh svg{display:block;overflow:visible}
-.herepin{position:absolute;left:8px;bottom:8px;z-index:12;max-width:78%;background:rgba(12,14,18,.82);border:1px solid rgba(240,195,106,.4);color:#f7f4ee;font-size:11px;font-weight:650;padding:6px 8px;border-radius:10px;line-height:1.35;pointer-events:none}
+.herepin{pointer-events:none;position:absolute;left:8px;bottom:8px;z-index:12;max-width:78%;background:rgba(12,14,18,.82);border:1px solid rgba(240,195,106,.4);color:#f7f4ee;font-size:11px;font-weight:650;padding:6px 8px;border-radius:10px;line-height:1.35;pointer-events:none}
 .herepin b{color:#f0c36a}
 .youdot{width:14px;height:14px;border-radius:50%;background:#4da3ff;border:3px solid #fff;box-shadow:0 0 0 6px rgba(77,163,255,.25)}
 #suggest li{display:flex;align-items:center;gap:10px}
@@ -1660,11 +1660,12 @@ function bindMapTouch(map, el){
   if(!pad){
     pad=document.createElement("div");
     pad.className="mappad";
-    pad.style.cssText="position:absolute;inset:0;z-index:8;cursor:grab;background:transparent;touch-action:none";
-    el.appendChild(pad);
+    pad.style.cssText="position:absolute;inset:0;z-index:30;cursor:grab;background:transparent;touch-action:none";
+    pad._bound=0;
   }
-  if(pad._bound) return;
-  pad._bound=1;
+  el.appendChild(pad);
+  if(pad._bound && pad._map===map) return;
+  pad._bound=1; pad._map=map;
   var last=null, dist0=0, zoom0=0, mouse=false;
   pad.addEventListener("mousedown", function(e){
     if(e.button!==0) return;
@@ -1741,6 +1742,7 @@ function mountCardMaps(cards){
     map.on("load",function(){
       tuneMap(map);
       try{ map.resize(); }catch(e){} bindMapTouch(map, el);
+      setTimeout(function(){ bindMapTouch(map, el); }, 300);
       if(path.length>1 || (c.ahead&&c.ahead.length>1)){
         map._flowPath=parts0.upcoming;
         map.addSource("passed",{type:"geojson",data:lineOf(parts0.passed)});
