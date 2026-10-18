@@ -1244,25 +1244,57 @@ function focusStop(card,row){
   row.classList.add("pick");
   var lat=Number(row.getAttribute("data-lat")), lng=Number(row.getAttribute("data-lng"));
   var name=(row.querySelector(".stopnm")||{}).textContent||"站";
-  var map=cardMap(card);
-  if(!map||!isFinite(lat)||!isFinite(lng)||!lat||!lng){ toast("呢個站暫時無座標"); return; }
+  var el=card.querySelector(".cardmap");
+  if(!el||!isFinite(lat)||!isFinite(lng)||!lat||!lng){ toast("呢個站暫時無座標"); return; }
+  var old=el._swMap;
+  var c=old&&old._card;
+  if(old){ try{ old.remove(); }catch(e){} el._swMap=null; card._swMap=null; }
+  el.innerHTML="";
+  var map=new maplibregl.Map({
+    container:el,
+    style:"https://tiles.openfreemap.org/styles/positron",
+    center:[lng,lat],
+    zoom:15.6,
+    attributionControl:false,
+    dragPan:true, dragRotate:false, touchZoomRotate:true, touchPitch:false, pitchWithRotate:false,
+    pixelRatio:Math.min(window.devicePixelRatio||2, 3)
+  });
+  if(map.dragPan) map.dragPan.disable();
+  if(map.touchZoomRotate) map.touchZoomRotate.disable();
+  if(map.scrollZoom) map.scrollZoom.disable();
   map._holdView=1;
   map._focusAt=[lng,lat];
-  function go(){
-    try{ map.resize(); }catch(e){}
+  map._card=c;
+  el._swMap=map; card._swMap=map;
+  bindMapTouch(map, el);
+  map.on("load", function(){
+    tuneMap(map);
+    map._loaded=1;
     try{ map.jumpTo({center:[lng,lat], zoom:15.6}); }catch(e){}
-    try{ map.easeTo({center:[lng,lat], zoom:15.6, duration:450, essential:true}); }catch(e){}
-  }
-  go();
-  if(!map._loaded) map.once("load", go);
-  if(map._focus){ map._focus.setLngLat([lng,lat]); }
-  else {
+    if(c){
+      var parts=routeParts(c);
+      map.addSource("passed",{type:"geojson",data:lineOf(parts.passed)});
+      map.addSource("upcoming",{type:"geojson",data:lineOf(parts.upcoming)});
+      map.addLayer({id:"passed",type:"line",source:"passed",layout:{"line-cap":"round","line-join":"round"},paint:{"line-color":"#8b8b92","line-width":4,"line-opacity":0.85}});
+      map.addLayer({id:"upcoming",type:"line",source:"upcoming",layout:{"line-cap":"round","line-join":"round"},paint:{"line-color":"#7dffc2","line-width":5,"line-opacity":0.35}});
+      map.addLayer({id:"upcomingglow",type:"line",source:"upcoming",layout:{"line-cap":"round","line-join":"round"},paint:{"line-color":"#7dffc2","line-width":2.2,"line-opacity":0.9}});
+      map._flowPath=parts.upcoming;
+      startParticles(map, flowGen);
+      applyRoad(map, parts.passed, parts.upcoming);
+      var bus=document.createElement("div");
+      var body=document.createElement("div");
+      body.className="veh"; body.innerHTML=busIcon(0); body.dataset.view="top";
+      bus.appendChild(body);
+      map._bus=new maplibregl.Marker({element:bus,anchor:"center"}).setLngLat([parts.pos.lng,parts.pos.lat]).addTo(map);
+    }
     var dot=document.createElement("div");
-    dot.style.cssText="width:18px;height:18px;border-radius:50%;background:#ffb020;border:2px solid #fff;box-shadow:0 0 0 6px rgba(255,176,32,.35),0 0 14px rgba(255,140,0,.85)";
+    dot.style.cssText="width:18px;height:18px;border-radius:50%;background:#ffb020;border:2px solid #fff;box-shadow:0 0 0 6px rgba(255,176,32,.4)";
     map._focus=new maplibregl.Marker({element:dot,anchor:"center"}).setLngLat([lng,lat]).addTo(map);
-  }
-  var pin=map.getContainer().querySelector(".herepin");
-  if(pin) pin.innerHTML="已跳去 <b>"+name+"</b>";
+    var pin=document.createElement("div");
+    pin.className="herepin";
+    pin.innerHTML="已跳去 <b>"+name+"</b>";
+    el.appendChild(pin);
+  });
   toast("地圖已跳去 "+name);
 }
 function alignStopWindow(card){
@@ -1614,7 +1646,7 @@ function updateLiveMap(map,c){
     if(state.loc && map._you) map._you.setLngLat([state.loc.lng,state.loc.lat]);
     var pin=map.getContainer().querySelector(".herepin");
     if(pin && !map._holdView) pin.innerHTML=nearHint(path,pos,c.name);
-    if(map._focusAt){ try{ map.jumpTo({center:map._focusAt, zoom:Math.max(map.getZoom(),15.2)}); }catch(e){} }
+    if(map._focusAt && map._focus){ try{ map._focus.setLngLat(map._focusAt); }catch(e){} }
     try{ map.resize(); }catch(e){}
     setRouteParts(map,parts.passed,parts.upcoming);
   }catch(e){}
@@ -1735,7 +1767,7 @@ function mountCardMaps(cards){
     pin.className="herepin";
     pin.innerHTML=nearHint(path,pos,c.name);
     el.appendChild(pin);
-    el._swMap=map;
+    el._swMap=map; map._card=c;
     var host=el.closest('.card'); if(host) host._swMap=map;
     map.on('load',function(){ map._loaded=1; if(map._focusAt){ try{ map.jumpTo({center:map._focusAt, zoom:15.6}); }catch(e){} } });
     keep.push(map);
