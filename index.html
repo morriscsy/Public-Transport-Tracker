@@ -73,6 +73,23 @@ h1{margin:2px 0 0;font-size:24px;letter-spacing:-.03em;font-weight:750}
 .tag button{border:0;background:transparent;color:#9a958b;font-size:16px}
 .msg{color:#9a958b;font-size:12px;min-height:16px}
 .card{background:#14171f;border:1px solid rgba(255,255,255,.1);border-radius:18px;padding:14px;margin:10px 0;transition:box-shadow .2s,border-color .2s}
+.cardhead{cursor:pointer}
+.chev{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;background:rgba(255,255,255,.06);color:#c5bfb4;font-size:12px;margin-left:6px;transition:transform .35s ease,background .2s;flex:0 0 22px}
+.card.open .chev{transform:rotate(180deg);background:rgba(125,255,194,.18);color:#7dffc2}
+.stops-wrap{display:grid;grid-template-rows:0fr;transition:grid-template-rows .38s cubic-bezier(.2,.8,.2,1),opacity .28s ease;opacity:.0}
+.card.open .stops-wrap{grid-template-rows:1fr;opacity:1}
+.stops-inner{overflow:hidden}
+.stops-title{font-size:12px;color:#9a958b;margin:10px 2px 4px;font-weight:650}
+.stops-list{list-style:none;margin:0;padding:2px 2px 6px}
+.stop-row{display:flex;gap:10px;align-items:flex-start;padding:7px 2px;font-size:13px;color:#b7b2a8;position:relative}
+.stop-row.past{color:#6d6962}
+.stop-row.here{color:#7dffc2;font-weight:750}
+.stop-dot{width:10px;height:10px;border-radius:50%;background:#3a3f4a;margin-top:4px;flex:0 0 10px;position:relative;z-index:1}
+.stop-row.here .stop-dot{background:#7dffc2;box-shadow:0 0 0 4px rgba(125,255,194,.22)}
+.stop-row.past .stop-dot{background:#5a564e}
+.stop-row:not(:last-child) .stop-dot::after{content:"";position:absolute;left:4px;top:12px;width:2px;bottom:-16px;background:#2c3038}
+.stop-row.here:not(:last-child) .stop-dot::after{background:#7dffc2}
+.stopn-hint{font-size:11px;color:#7a756b;margin-top:4px}
 .card.watch{border-color:#7dffc2;box-shadow:0 0 0 1px #7dffc2,0 0 18px rgba(125,255,194,.55);animation:cardglow 1.6s ease-in-out infinite}
 @keyframes cardglow{50%{box-shadow:0 0 0 1px #7dffc2,0 0 28px rgba(125,255,194,.85)}}
 .top{display:flex;gap:10px;align-items:flex-start}
@@ -855,6 +872,7 @@ function kmbNearby(route){
           var idx=path.findIndex(function(s){return s.lat===item.lat&&s.lng===item.lng;});
           item.ahead=idx>=0?path.slice(idx):[{lat:item.lat,lng:item.lng,name:item.name}];
           item.path=path.slice(Math.max(0,idx-10), idx+1);
+          item.stops=path.slice();
           delete item._full;
         });
       });
@@ -1119,6 +1137,41 @@ function checkAlerts(cards){
     saveAlerted();
   });
 }
+
+function stopsPanel(c){
+  var list=c.stops||[];
+  if(!list.length) return "";
+  var here=-1;
+  list.forEach(function(st,i){
+    if(st.name===c.name || (Math.abs((st.lat||0)-c.lat)<0.00025 && Math.abs((st.lng||0)-c.lng)<0.00025)) here=i;
+  });
+  return '<div class="stops-wrap"><div class="stops-inner"><div class="stops-title">全程 '+list.length+' 站'+(here>=0?(" · 你喺第 "+(here+1)+" 站"):"")+'</div><ol class="stops-list">'+
+    list.map(function(st,i){
+      var cls=i===here?"here":(here>=0&&i<here?"past":"");
+      return '<li class="stop-row '+cls+'"><span class="stop-dot"></span><span>'+(i+1)+'. '+(st.name||"")+'</span></li>';
+    }).join("")+'</ol></div></div>';
+}
+function bindExpand(){
+  var box=$("feed");
+  if(box._exp) return;
+  box._exp=1;
+  state.open=state.open||{};
+  var last=0;
+  box.addEventListener("click", function(e){
+    if(e.target.closest(".cardmap")||e.target.closest(".mappad")||e.target.closest(".times")) return;
+    var card=e.target.closest(".card"); if(!card) return;
+    var now=Date.now();
+    if(now-last<280) return;
+    last=now;
+    var key=card.getAttribute("data-key");
+    card.classList.toggle("open");
+    if(card.classList.contains("open")){
+      state.open[key]=1;
+      var cur=card.querySelector(".stop-row.here");
+      if(cur) setTimeout(function(){ cur.scrollIntoView({block:"nearest",behavior:"smooth"}); }, 360);
+    } else delete state.open[key];
+  });
+}
 function paint(){
   var on=state.items.filter(isOn);
   var cards=sortCards(state.cards.filter(function(c){
@@ -1168,10 +1221,10 @@ function paint(){
       ? '<span class="linechip" style="background:'+col+'">'+c.route+'</span><div class="meta">'+c.dist+'米</div>'
       : '<div class="to">往 <b>'+dest+'</b></div><div class="meta">'+c.coName+' · '+c.dist+'米</div><div class="stopn">'+c.name+'</div>';
     var mid=c.kind==="bus"?("map-"+String(c.co||"")+"-"+String(c.route||"")+"-"+String(c.bound||"")+"-"+String(c.stopId||"").replace(/[^a-zA-Z0-9_-]/g,"_")):"";
-    return '<article class="card'+(state.watch&&state.watch[c._key]?' watch':'')+'" data-key="'+c._key+'"><div class="cardhead"><div class="cardmain"><div class="namerow">'+icon(c.kind==="mtr"?"mtr":c.co,c.line)+'<div class="bus">'+title+'</div></div>'+sub+
+    return '<article class="card'+(state.watch&&state.watch[c._key]?' watch':'')+(state.open&&state.open[c._key]?' open':'')+'" data-key="'+c._key+'"><div class="cardhead"><div class="cardmain"><div class="namerow">'+icon(c.kind==="mtr"?"mtr":c.co,c.line)+'<div class="bus">'+title+'</div><span class="chev">▾</span></div>'+sub+
       (c.kind==="mtr"?'<div class="to">往 <b>'+dest+'</b></div>':'')+'</div>'+
       '<div class="times mini">'+[0,1,2].map(function(i){return slot(c.etas[i],i+1);}).join("")+'</div></div>'+
-      (mid?'<div class="cardmap" id="'+mid+'"></div>':'')+'</article>';
+      (mid?'<div class="cardmap" id="'+mid+'"></div>':'')+stopsPanel(c)+'</article>';
   }).join("");
   [].forEach.call(document.querySelectorAll(".cardmap"),function(el){
     if(kept[el.id]){
@@ -1182,6 +1235,7 @@ function paint(){
   state._shown=cards;
   mountCardMaps(cards.filter(function(c){return c.kind==="bus";}));
   bindWatch();
+  bindExpand();
   checkAlerts(cards);
 }
 function busSvg(view){
