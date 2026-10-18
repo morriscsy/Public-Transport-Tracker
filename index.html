@@ -1888,7 +1888,7 @@ function showGuide(i){
 }
 function closeGuide(){
   var box=$("guide"); if(box) box.classList.remove("on");
-  try{ localStorage.setItem("sw-guide-v2","1"); }catch(e){}
+  try{ localStorage.setItem("sw-guide-v3","1"); }catch(e){}
 }
 (function(){
   var box=$("guide"); if(!box) return;
@@ -1897,7 +1897,7 @@ function closeGuide(){
     var i=(box._i||0)+1;
     if(i>=GUIDE.length) closeGuide(); else showGuide(i);
   };
-  if(!localStorage.getItem("sw-guide-v2")) setTimeout(function(){ showGuide(0); }, 600);
+  if(!localStorage.getItem("sw-guide-v3")) setTimeout(function(){ showGuide(0); }, 600);
 })();
 
 loadCatalog().then(function(){ renderTags(); useGps(); });
