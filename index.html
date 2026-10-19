@@ -1082,6 +1082,28 @@ function bindWatch(){
   }
   box.addEventListener("touchend", endSwipe);
   box.addEventListener("touchcancel", endSwipe);
+  box.addEventListener("mousedown", function(e){
+    if(e.button!==0) return;
+    var wrap=e.target.closest(".cardwrap"); if(!wrap) return;
+    if(e.target.closest(".stops-list")||e.target.closest(".cardmap")||e.target.closest(".mappad")||e.target.closest(".alertbtn")) return;
+    drag={wrap:wrap, x:e.clientX, y:e.clientY, dx:0, lock:"", mouse:1};
+  });
+  window.addEventListener("mousemove", function(e){
+    if(!drag||!drag.mouse) return;
+    var dx=e.clientX-drag.x, dy=e.clientY-drag.y;
+    if(!drag.lock){
+      if(Math.abs(dx)<6 && Math.abs(dy)<6) return;
+      drag.lock=Math.abs(dx)>Math.abs(dy)?"x":"y";
+    }
+    if(drag.lock!=="x") return;
+    e.preventDefault();
+    drag.dx=dx;
+    var base=drag.wrap.classList.contains("swiped")?-108:0;
+    var x=Math.max(-108, Math.min(0, base+dx));
+    drag.wrap.querySelector(".card").style.transition="none";
+    drag.wrap.querySelector(".card").style.transform="translateX("+x+"px)";
+  });
+  window.addEventListener("mouseup", function(){ if(drag&&drag.mouse) endSwipe(); });
   box.addEventListener("click", function(e){
     var btn=e.target.closest(".alertbtn");
     if(btn){
