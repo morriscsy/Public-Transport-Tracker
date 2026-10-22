@@ -1960,6 +1960,7 @@ function renderLiveMap(){
       dragPan:true, touchZoomRotate:true, touchPitch:false
     });
     map.addControl(new maplibregl.NavigationControl({showCompass:false}), "top-right");
+    map.on("dragstart", function(){ map._userMoved=1; });
     el._map=map; el._marks={};
     map.on("load", function(){ tuneMap(map); placeLive(map, cards); });
   } else {
