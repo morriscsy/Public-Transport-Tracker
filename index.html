@@ -1,6 +1,9 @@
 <!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -309,7 +312,7 @@ body.view-map #livemap{display:block}
 <p class="msg" id="msg">搜尋路線或港鐵站，最近項目會留低。</p>
 </div>
 <div id="guide" class="guide"><div class="guidebox"><div class="gdots"></div><img class="gshot" alt=""><h3></h3><p></p><div class="gacts"><button class="gskip" type="button">跳過</button><button class="gnext" type="button">下一步</button></div></div></div><div class="viewbar" id="viewbar"><button type="button" class="on" data-view="list">列表</button><button type="button" data-view="map">地圖</button></div><div id="livemap"></div><div id="feed"></div>
-<p class="fine">九巴／龍運／城巴／港鐵公開資料 · 「原定班次」= 時間表，並非 GPS 實時車</p>
+<p class="fine">v22e · 九巴／龍運／城巴／港鐵公開資料 · 「原定班次」= 時間表，並非 GPS 實時車</p>
 </div>
 <div class="gate" id="gate">
   <div class="gatebox">
@@ -1896,8 +1899,9 @@ function refresh(){
     if(changed) persist();
     state.cards=cards; renderTags(); paint();
     say("已更新 "+new Date().toLocaleTimeString("zh-HK",{hour12:false})+" · 只顯示完整分鐘");
-  }).catch(function(){
-    say("部分路線更新失敗，已顯示其餘班次。"); if(state.cards&&state.cards.length) paint();
+  }).catch(function(err){
+    say("更新未完成："+(err&&err.message?err.message:"網絡")+" · 已保留現有班次");
+    if(state.cards&&state.cards.length) paint();
   }).then(function(){state.busy=false; if(state.needRefresh){state.needRefresh=false; refresh();}});
 }
 renderTags();
@@ -2026,13 +2030,9 @@ function placeLive(map){
     var d=document.createElement("div");
     d.className="vbus";
     d.innerHTML='<div class="veh">'+busIcon(hd)+'</div><div class="tag">'+(c.route||"")+' '+(c.co==="KMB"?"九巴":"城巴")+'</div>';
-    d.addEventListener("click", function(ev){
-      ev.preventDefault(); ev.stopPropagation();
-      if(map._pop){ try{ map._pop.remove(); }catch(e){} }
-      map._pop=new maplibregl.Popup({offset:28, closeButton:true, maxWidth:"280px"})
-        .setLngLat([pos.lng,pos.lat]).setHTML(busPopupHtml(c, hint)).addTo(map);
-    });
-    var mk=new maplibregl.Marker({element:d, anchor:"bottom"}).setLngLat([pos.lng,pos.lat]).addTo(map);
+    var mk=new maplibregl.Marker({element:d, anchor:"bottom"}).setLngLat([pos.lng,pos.lat]).setPopup(
+      new maplibregl.Popup({offset:28, closeButton:true, maxWidth:"280px"}).setHTML(busPopupHtml(c, hint))
+    ).addTo(map);
     map._marks[idx]=mk;
   });
   try{ map.getSource("live-passed").setData({type:"FeatureCollection",features:passed}); }catch(e){}
