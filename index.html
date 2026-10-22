@@ -312,7 +312,7 @@ body.view-map #livemap{display:block}
 <p class="msg" id="msg">搜尋路線或港鐵站，最近項目會留低。</p>
 </div>
 <div id="guide" class="guide"><div class="guidebox"><div class="gdots"></div><img class="gshot" alt=""><h3></h3><p></p><div class="gacts"><button class="gskip" type="button">跳過</button><button class="gnext" type="button">下一步</button></div></div></div><div class="viewbar" id="viewbar"><button type="button" class="on" data-view="list">列表</button><button type="button" data-view="map">地圖</button></div><div id="livemap"></div><div id="feed"></div>
-<p class="fine">v22g · 九巴／龍運／城巴／港鐵公開資料 · 「原定班次」= 時間表，並非 GPS 實時車</p>
+<p class="fine">v22h · 九巴／龍運／城巴／港鐵公開資料 · 「原定班次」= 時間表，並非 GPS 實時車</p>
 </div>
 <div class="gate" id="gate">
   <div class="gatebox">
@@ -2036,9 +2036,16 @@ function placeLive(map){
       var d=document.createElement("div");
       d.className="vbus";
       d.innerHTML='<div class="veh">'+busIcon(hd)+'</div><div class="tag">'+(c.route||"")+' '+(c.co==="KMB"?"九巴":"城巴")+'</div>';
-      var mk=new maplibregl.Marker({element:d, anchor:"bottom"}).setLngLat([roadPos.lng,roadPos.lat]).setPopup(
-        new maplibregl.Popup({offset:28, closeButton:true, maxWidth:"280px"}).setHTML(busPopupHtml(c, hint))
-      ).addTo(map);
+      var pop=new maplibregl.Popup({offset:28, closeButton:true, maxWidth:"280px"}).setHTML(busPopupHtml(c, hint));
+      var mk=new maplibregl.Marker({element:d, anchor:"bottom"}).setLngLat([roadPos.lng,roadPos.lat]).setPopup(pop).addTo(map);
+      var hideT=null;
+      d.addEventListener("mouseenter", function(){ clearTimeout(hideT); if(!pop.isOpen()) pop.setLngLat(mk.getLngLat()).addTo(map); });
+      d.addEventListener("mouseleave", function(){ hideT=setTimeout(function(){ if(pop.isOpen()) pop.remove(); }, 280); });
+      pop.on("open", function(){
+        var el=pop.getElement(); if(!el) return;
+        el.addEventListener("mouseenter", function(){ clearTimeout(hideT); });
+        el.addEventListener("mouseleave", function(){ hideT=setTimeout(function(){ if(pop.isOpen()) pop.remove(); }, 200); });
+      });
       map._marks[idx]=mk;
       bounds.extend([roadPos.lng,roadPos.lat]);
     }));
