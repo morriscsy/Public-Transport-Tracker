@@ -211,7 +211,8 @@ h1{margin:2px 0 0;font-size:24px;letter-spacing:-.03em;font-weight:750}
 #livemap{display:none;height:62vh;min-height:360px;border-radius:18px;overflow:hidden;border:1px solid rgba(255,255,255,.1);background:#1c2128}
 body.view-map #feed{display:none}
 body.view-map #livemap{display:block}
-.vpin{background:#e10600;color:#fff;border-radius:10px;padding:3px 7px;font-size:12px;font-weight:800;border:2px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,.35);white-space:nowrap}
+.vbus{display:flex;flex-direction:column;align-items:center;pointer-events:none}
+.vbus .tag{background:#111;color:#fff;border-radius:8px;padding:2px 6px;font-size:11px;font-weight:800;margin-top:2px;border:1px solid rgba(255,255,255,.4)}
 </style>
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icon-192.png">
@@ -1969,27 +1970,49 @@ function renderLiveMap(){
   }
 }
 function placeLive(map, cards){
-  if(!map.getStyle || !map._loaded && !map.isStyleLoaded()) { map.once("load", function(){ placeLive(map, cards); }); return; }
+  if(!map.getStyle || (!map._loaded && !map.isStyleLoaded())) { map.once("load", function(){ placeLive(map, cards); }); return; }
   map._loaded=1;
+  if(!map.getSource("live-up")){
+    map.addSource("live-passed",{type:"geojson",data:{type:"FeatureCollection",features:[]}});
+    map.addSource("live-up",{type:"geojson",data:{type:"FeatureCollection",features:[]}});
+    map.addLayer({id:"live-passed",type:"line",source:"live-passed",layout:{"line-cap":"round","line-join":"round"},paint:{"line-color":"#8b8b92","line-width":4,"line-opacity":0.8}});
+    map.addLayer({id:"live-up-glow",type:"line",source:"live-up",layout:{"line-cap":"round","line-join":"round"},paint:{"line-color":"#7dffc2","line-width":7,"line-opacity":0.28}});
+    map.addLayer({id:"live-up",type:"line",source:"live-up",layout:{"line-cap":"round","line-join":"round"},paint:{"line-color":"#7dffc2","line-width":3.2,"line-opacity":0.95}});
+  }
   var seen={};
   var bounds=new maplibregl.LngLatBounds();
   var any=false;
+  var passed=[], upcoming=[];
   cards.forEach(function(c){
     var parts=routeParts(c);
     var pos=parts.pos; if(!pos) return;
     var key=c._key||cardKey(c);
     seen[key]=1; any=true;
+    var path=c.path&&c.path.length?c.path:[{lat:c.lat,lng:c.lng}];
+    var hd=headingAt(path, parts.prog);
+    var up=parts.upcoming||[];
+    var back=parts.passed||[];
+    up.forEach(function(p){ if(p&&p.lng) bounds.extend([p.lng,p.lat]); });
+    back.slice(-4).forEach(function(p){ if(p&&p.lng) bounds.extend([p.lng,p.lat]); });
     bounds.extend([pos.lng,pos.lat]);
-    var label=(c.route||"")+" 往 "+((c.etas&&c.etas[0]&&c.etas[0].dest)||c.dest||"");
+    if(up.length>1) upcoming.push({type:"Feature",geometry:{type:"LineString",coordinates:up.map(function(p){return [p.lng,p.lat];})}});
+    if(back.length>1) passed.push({type:"Feature",geometry:{type:"LineString",coordinates:back.slice(-6).concat([pos]).map(function(p){return [p.lng,p.lat];})}});
+    var dest=(c.etas&&c.etas[0]&&c.etas[0].dest)||c.dest||"";
+    var hint=nearHint(path,pos,c.name).replace(/<[^>]+>/g,"");
     if(map._marks && map._marks[key]){
       map._marks[key].setLngLat([pos.lng,pos.lat]);
+      var body=map._marks[key].getElement().querySelector(".veh");
+      if(body){ body.innerHTML=busIcon(hd); }
     } else {
       var d=document.createElement("div");
-      d.className="vpin"; d.textContent=c.route||"車";
-      d.title=label;
+      d.className="vbus";
+      d.innerHTML='<div class="veh">'+busIcon(hd)+'</div><div class="tag">'+(c.route||"")+'</div>';
+      d.title=(c.route||"")+" 往 "+dest+" · "+hint;
       map._marks[key]=new maplibregl.Marker({element:d, anchor:"center"}).setLngLat([pos.lng,pos.lat]).addTo(map);
     }
   });
+  try{ map.getSource("live-passed").setData({type:"FeatureCollection",features:passed}); }catch(e){}
+  try{ map.getSource("live-up").setData({type:"FeatureCollection",features:upcoming}); }catch(e){}
   Object.keys(map._marks||{}).forEach(function(k){
     if(!seen[k]){ try{ map._marks[k].remove(); }catch(e){} delete map._marks[k]; }
   });
@@ -2002,7 +2025,7 @@ function placeLive(map, cards){
     } else map._you.setLngLat([state.loc.lng,state.loc.lat]);
   }
   if(any && !map._userMoved){
-    try{ map.fitBounds(bounds, {padding:50, maxZoom:14.5, duration:500}); }catch(e){}
+    try{ map.fitBounds(bounds, {padding:60, maxZoom:14.2, duration:600}); }catch(e){}
   }
 }
 (function(){
