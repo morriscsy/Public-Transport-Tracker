@@ -211,8 +211,18 @@ h1{margin:2px 0 0;font-size:24px;letter-spacing:-.03em;font-weight:750}
 #livemap{display:none;height:62vh;min-height:360px;border-radius:18px;overflow:hidden;border:1px solid rgba(255,255,255,.1);background:#1c2128}
 body.view-map #feed{display:none}
 body.view-map #livemap{display:block}
-.vbus{display:flex;flex-direction:column;align-items:center;pointer-events:none}
-.vbus .tag{background:#111;color:#fff;border-radius:8px;padding:2px 6px;font-size:11px;font-weight:800;margin-top:2px;border:1px solid rgba(255,255,255,.4)}
+.vbus{display:flex;flex-direction:column;align-items:center;cursor:pointer}
+.vbus .veh{transform:scale(.72);transform-origin:center bottom}
+.vbus .tag{background:#111;color:#fff;border-radius:8px;padding:2px 6px;font-size:11px;font-weight:800;margin-top:-6px;border:1px solid rgba(255,255,255,.45)}
+.maplibregl-popup-content{background:#14171f;color:#fff;border-radius:14px;padding:10px 12px;border:1px solid rgba(125,255,194,.4)}
+.maplibregl-popup-tip{border-top-color:#14171f}
+.bpop-h{font-weight:800;font-size:16px}
+.bpop-to{color:#f0c36a;margin:2px 0 6px}
+.bpop-stop{color:#c9c3b8;font-size:12px;margin-bottom:6px}
+.bpop-times{display:flex;gap:6px}
+.peta{background:#1c2128;border-radius:8px;padding:6px 8px;text-align:center;min-width:58px}
+.peta span{display:block;font-size:10px;color:#9a958b}
+.peta b{font-size:15px;color:#7dffc2}
 </style>
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icon-192.png">
@@ -1952,7 +1962,7 @@ function applyView(){
 function renderLiveMap(){
   if(!window.maplibregl) return;
   var el=$("livemap"); if(!el) return;
-  var cards=(state._shown||state.cards||[]).filter(function(c){return c.kind==="bus" && c.lat && c.lng;});
+  var cards=(state._shown&&state._shown.length?state._shown:state.cards||[]).filter(function(c){return c.kind==="bus" && c.lat && c.lng;});
   if(!el._map){
     var center=state.loc?[state.loc.lng,state.loc.lat]:[114.17,22.32];
     var map=new maplibregl.Map({
@@ -1983,10 +1993,10 @@ function placeLive(map, cards){
   var bounds=new maplibregl.LngLatBounds();
   var any=false;
   var passed=[], upcoming=[];
-  cards.forEach(function(c){
+  cards.forEach(function(c, idx){
     var parts=routeParts(c);
     var pos=parts.pos; if(!pos) return;
-    var key=c._key||cardKey(c);
+    var key=(c._key||cardKey(c))+"#"+idx;
     seen[key]=1; any=true;
     var path=c.path&&c.path.length?c.path:[{lat:c.lat,lng:c.lng}];
     var hd=headingAt(path, parts.prog);
@@ -1999,16 +2009,34 @@ function placeLive(map, cards){
     if(back.length>1) passed.push({type:"Feature",geometry:{type:"LineString",coordinates:back.slice(-6).concat([pos]).map(function(p){return [p.lng,p.lat];})}});
     var dest=(c.etas&&c.etas[0]&&c.etas[0].dest)||c.dest||"";
     var hint=nearHint(path,pos,c.name).replace(/<[^>]+>/g,"");
+    function popupHtml(){
+      var times=[0,1,2].map(function(n){
+        var e=c.etas&&c.etas[n];
+        var t=e?(e.text|| (e.min!=null?e.min+"分":"—")):"—";
+        return '<div class="peta"><span>第'+(n+1)+'班</span><b>'+t+'</b></div>';
+      }).join("");
+      return '<div class="bpop"><div class="bpop-h">'+(c.coName||"")+' '+(c.route||"")+'</div><div class="bpop-to">往 '+dest+'</div><div class="bpop-stop">'+(c.name||"")+' · '+hint+'</div><div class="bpop-times">'+times+'</div></div>';
+    }
     if(map._marks && map._marks[key]){
       map._marks[key].setLngLat([pos.lng,pos.lat]);
       var body=map._marks[key].getElement().querySelector(".veh");
       if(body){ body.innerHTML=busIcon(hd); }
+      map._marks[key]._html=popupHtml;
     } else {
       var d=document.createElement("div");
       d.className="vbus";
       d.innerHTML='<div class="veh">'+busIcon(hd)+'</div><div class="tag">'+(c.route||"")+'</div>';
       d.title=(c.route||"")+" 往 "+dest+" · "+hint;
-      map._marks[key]=new maplibregl.Marker({element:d, anchor:"center"}).setLngLat([pos.lng,pos.lat]).addTo(map);
+      d.addEventListener("click", function(ev){
+        ev.stopPropagation();
+        if(map._pop){ try{ map._pop.remove(); }catch(e){} }
+        map._pop=new maplibregl.Popup({offset:22, closeButton:true, maxWidth:"280px"})
+          .setLngLat(map._marks[key].getLngLat())
+          .setHTML(map._marks[key]._html())
+          .addTo(map);
+      });
+      map._marks[key]=new maplibregl.Marker({element:d, anchor:"bottom"}).setLngLat([pos.lng,pos.lat]).addTo(map);
+      map._marks[key]._html=popupHtml;
     }
   });
   try{ map.getSource("live-passed").setData({type:"FeatureCollection",features:passed}); }catch(e){}
