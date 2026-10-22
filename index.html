@@ -312,7 +312,7 @@ body.view-map #livemap{display:block}
 <p class="msg" id="msg">搜尋路線或港鐵站，最近項目會留低。</p>
 </div>
 <div id="guide" class="guide"><div class="guidebox"><div class="gdots"></div><img class="gshot" alt=""><h3></h3><p></p><div class="gacts"><button class="gskip" type="button">跳過</button><button class="gnext" type="button">下一步</button></div></div></div><div class="viewbar" id="viewbar"><button type="button" class="on" data-view="list">列表</button><button type="button" data-view="map">地圖</button></div><div id="livemap"></div><div id="feed"></div>
-<p class="fine">v22e · 九巴／龍運／城巴／港鐵公開資料 · 「原定班次」= 時間表，並非 GPS 實時車</p>
+<p class="fine">v22f · 九巴／龍運／城巴／港鐵公開資料 · 「原定班次」= 時間表，並非 GPS 實時車</p>
 </div>
 <div class="gate" id="gate">
   <div class="gatebox">
@@ -2013,30 +2013,41 @@ function placeLive(map){
   map._marks={};
   var bounds=new maplibregl.LngLatBounds();
   var any=false, passed=[], upcoming=[];
+  var jobs=[];
   cards.forEach(function(c, idx){
     var parts=routeParts(c);
     var pos=parts.pos||{lat:c.lat,lng:c.lng};
     if(!pos||!pos.lng) return;
     any=true;
-    var path=(c.stops&&c.stops.length)?c.stops:(c.path&&c.path.length?c.path:[{lat:c.lat,lng:c.lng,name:c.name||""}]);
-    var hd=0; try{ hd=headingAt(path, parts.prog); }catch(e){}
+    var path=c.path&&c.path.length?c.path:[{lat:c.lat,lng:c.lng,name:c.name||""}];
     var up=parts.upcoming||[];
     var back=parts.passed||[];
-    [pos].concat(up.slice(0,8)).concat(back.slice(-3)).forEach(function(p){ if(p&&p.lng) bounds.extend([p.lng,p.lat]); });
-    if(up.length>1) upcoming.push({type:"Feature",properties:{i:idx},geometry:{type:"LineString",coordinates:up.map(function(p){return [p.lng,p.lat];})}});
-    if(back.length>1) passed.push({type:"Feature",properties:{i:idx},geometry:{type:"LineString",coordinates:back.slice(-8).concat([pos]).map(function(p){return [p.lng,p.lat];})}});
-    var dest=(c.etas&&c.etas[0]&&c.etas[0].dest)||c.dest||"";
-    var hint=""; try{ hint=nearHint(path,pos,c.name).replace(/<[^>]+>/g,""); }catch(e){}
-    var d=document.createElement("div");
-    d.className="vbus";
-    d.innerHTML='<div class="veh">'+busIcon(hd)+'</div><div class="tag">'+(c.route||"")+' '+(c.co==="KMB"?"九巴":"城巴")+'</div>';
-    var mk=new maplibregl.Marker({element:d, anchor:"bottom"}).setLngLat([pos.lng,pos.lat]).setPopup(
-      new maplibregl.Popup({offset:28, closeButton:true, maxWidth:"280px"}).setHTML(busPopupHtml(c, hint))
-    ).addTo(map);
-    map._marks[idx]=mk;
+    [pos].concat(up.slice(0,6)).forEach(function(p){ if(p&&p.lng) bounds.extend([p.lng,p.lat]); });
+    jobs.push(Promise.all([roadLine(back.concat([pos])), roadLine(up)]).then(function(arr){
+      var roadBack=arr[0]&&arr[0].length>1?arr[0]:back;
+      var roadUp=arr[1]&&arr[1].length>1?arr[1]:up;
+      var roadPos=roadUp[0]||pos;
+      if(passed.length||upcoming.length||true){
+        if(roadBack.length>1) passed.push({type:"Feature",properties:{i:idx},geometry:{type:"LineString",coordinates:roadBack.map(function(p){return [p.lng,p.lat];})}});
+        if(roadUp.length>1) upcoming.push({type:"Feature",properties:{i:idx},geometry:{type:"LineString",coordinates:roadUp.map(function(p){return [p.lng,p.lat];})}});
+      }
+      var hd=0; try{ hd=headingAt(roadUp.length>1?roadUp:path, 0.05); }catch(e){}
+      var hint=""; try{ hint=nearHint(path,pos,c.name).replace(/<[^>]+>/g,""); }catch(e){}
+      var d=document.createElement("div");
+      d.className="vbus";
+      d.innerHTML='<div class="veh">'+busIcon(hd)+'</div><div class="tag">'+(c.route||"")+' '+(c.co==="KMB"?"九巴":"城巴")+'</div>';
+      var mk=new maplibregl.Marker({element:d, anchor:"bottom"}).setLngLat([roadPos.lng,roadPos.lat]).setPopup(
+        new maplibregl.Popup({offset:28, closeButton:true, maxWidth:"280px"}).setHTML(busPopupHtml(c, hint))
+      ).addTo(map);
+      map._marks[idx]=mk;
+      bounds.extend([roadPos.lng,roadPos.lat]);
+    }));
   });
-  try{ map.getSource("live-passed").setData({type:"FeatureCollection",features:passed}); }catch(e){}
-  try{ map.getSource("live-up").setData({type:"FeatureCollection",features:upcoming}); }catch(e){}
+  Promise.all(jobs).then(function(){
+    try{ map.getSource("live-passed").setData({type:"FeatureCollection",features:passed}); }catch(e){}
+    try{ map.getSource("live-up").setData({type:"FeatureCollection",features:upcoming}); }catch(e){}
+    if(any && !map._userMoved){ try{ map.fitBounds(bounds, {padding:70, maxZoom:14, duration:500}); }catch(e){} }
+  });
   if(state.loc){
     bounds.extend([state.loc.lng,state.loc.lat]);
     if(!map._you){
