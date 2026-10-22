@@ -1831,7 +1831,7 @@ function refresh(){
   state.busy=true; renderTags();
   if(!state.items.length){state.cards=[]; paint(); state.busy=false; return;}
   var jobs=state.items.filter(function(x){return x.t==="bus";}).map(function(x){
-    return Promise.all([kmbNearby(x.k),ctbNearby(x.k)]).then(function(arr){
+    return Promise.all([kmbNearby(x.k).catch(function(){return [];}),ctbNearby(x.k).catch(function(){return [];})]).then(function(arr){
       if((arr[0]&&arr[0].length)&&(arr[1]&&arr[1].length)) jointFound[String(x.k).toUpperCase()]=1;
       var nearby=arr[0].concat(arr[1]).sort(function(a,b){return a.dist-b.dist;});
       var used={},picked=[];
@@ -1843,7 +1843,7 @@ function refresh(){
       return Promise.all(picked.map(function(item){return busEtas(item).then(function(e){item.etas=e;return item;});}));
     });
   });
-  var mtrJobs=state.items.filter(function(x){return x.t==="mtr";}).map(function(x){return mtrCardsFor(x.k);});
+  var mtrJobs=state.items.filter(function(x){return x.t==="mtr";}).map(function(x){return mtrCardsFor(x.k).catch(function(){return [];});});
   Promise.all(jobs.concat(mtrJobs)).then(function(groups){
     var cards=[].concat.apply([],groups).filter(function(c){return c&&c.etas;});
     function destKey(c){
@@ -1897,7 +1897,7 @@ function refresh(){
     state.cards=cards; renderTags(); paint();
     say("已更新 "+new Date().toLocaleTimeString("zh-HK",{hour12:false})+" · 只顯示完整分鐘");
   }).catch(function(){
-    say("查詢失敗。請用 Safari 開 github.io 網址，並允許網絡。");
+    say("部分路線更新失敗，已顯示其餘班次。"); if(state.cards&&state.cards.length) paint();
   }).then(function(){state.busy=false; if(state.needRefresh){state.needRefresh=false; refresh();}});
 }
 renderTags();
@@ -1959,10 +1959,22 @@ function applyView(){
   });
   if(state.view==="map") renderLiveMap();
 }
+function liveCards(){
+  var src=(state._shown&&state._shown.length)?state._shown:(state.cards||[]);
+  return src.filter(function(c){return c.kind==="bus" && c.lat && c.lng;});
+}
+function busPopupHtml(c, hint){
+  var dest=(c.etas&&c.etas[0]&&c.etas[0].dest)||c.dest||"";
+  var times=[0,1,2].map(function(n){
+    var e=c.etas&&c.etas[n];
+    var t=e?(e.text||(e.min!=null?e.min+"分":(function(){var m=etaMins(e); return m==null?"—":(m<=0?"即將到":m+"分");})())):"—";
+    return '<div class="peta"><span>第'+(n+1)+'班</span><b>'+t+'</b></div>';
+  }).join("");
+  return '<div class="bpop"><div class="bpop-h">'+(c.coName||"")+' '+(c.route||"")+'</div><div class="bpop-to">往 '+dest+'</div><div class="bpop-stop">'+(c.name||"")+(hint?(" · "+hint):"")+'</div><div class="bpop-times">'+times+'</div></div>';
+}
 function renderLiveMap(){
   if(!window.maplibregl) return;
   var el=$("livemap"); if(!el) return;
-  var cards=(state._shown&&state._shown.length?state._shown:state.cards||[]).filter(function(c){return c.kind==="bus" && c.lat && c.lng;});
   if(!el._map){
     var center=state.loc?[state.loc.lng,state.loc.lat]:[114.17,22.32];
     var map=new maplibregl.Map({
@@ -1972,88 +1984,71 @@ function renderLiveMap(){
     });
     map.addControl(new maplibregl.NavigationControl({showCompass:false}), "top-right");
     map.on("dragstart", function(){ map._userMoved=1; });
-    el._map=map; el._marks={};
-    map.on("load", function(){ tuneMap(map); placeLive(map, cards); });
+    el._map=map; map._marks={};
+    map.on("load", function(){ tuneMap(map); map._loaded=1; placeLive(map); });
   } else {
     try{ el._map.resize(); }catch(e){}
-    placeLive(el._map, cards);
+    placeLive(el._map);
   }
 }
-function placeLive(map, cards){
-  if(!map.getStyle || (!map._loaded && !map.isStyleLoaded())) { map.once("load", function(){ placeLive(map, cards); }); return; }
+function placeLive(map){
+  if(!map || !map.getStyle || (!map._loaded && !(map.isStyleLoaded&&map.isStyleLoaded()))){
+    if(map) map.once("load", function(){ map._loaded=1; placeLive(map); });
+    return;
+  }
   map._loaded=1;
+  var cards=liveCards();
   if(!map.getSource("live-up")){
     map.addSource("live-passed",{type:"geojson",data:{type:"FeatureCollection",features:[]}});
     map.addSource("live-up",{type:"geojson",data:{type:"FeatureCollection",features:[]}});
-    map.addLayer({id:"live-passed",type:"line",source:"live-passed",layout:{"line-cap":"round","line-join":"round"},paint:{"line-color":"#8b8b92","line-width":4,"line-opacity":0.8}});
-    map.addLayer({id:"live-up-glow",type:"line",source:"live-up",layout:{"line-cap":"round","line-join":"round"},paint:{"line-color":"#7dffc2","line-width":7,"line-opacity":0.28}});
-    map.addLayer({id:"live-up",type:"line",source:"live-up",layout:{"line-cap":"round","line-join":"round"},paint:{"line-color":"#7dffc2","line-width":3.2,"line-opacity":0.95}});
+    map.addLayer({id:"live-passed",type:"line",source:"live-passed",layout:{"line-cap":"round","line-join":"round"},paint:{"line-color":"#8b8b92","line-width":5,"line-opacity":0.85}});
+    map.addLayer({id:"live-up-glow",type:"line",source:"live-up",layout:{"line-cap":"round","line-join":"round"},paint:{"line-color":"#7dffc2","line-width":8,"line-opacity":0.35}});
+    map.addLayer({id:"live-up",type:"line",source:"live-up",layout:{"line-cap":"round","line-join":"round"},paint:{"line-color":"#19c37d","line-width":4,"line-opacity":1}});
   }
-  var seen={};
+  Object.keys(map._marks||{}).forEach(function(k){ try{ map._marks[k].remove(); }catch(e){} });
+  map._marks={};
   var bounds=new maplibregl.LngLatBounds();
-  var any=false;
-  var passed=[], upcoming=[];
+  var any=false, passed=[], upcoming=[];
   cards.forEach(function(c, idx){
     var parts=routeParts(c);
-    var pos=parts.pos; if(!pos) return;
-    var key=(c._key||cardKey(c))+"#"+idx;
-    seen[key]=1; any=true;
-    var path=c.path&&c.path.length?c.path:[{lat:c.lat,lng:c.lng}];
-    var hd=headingAt(path, parts.prog);
+    var pos=parts.pos||{lat:c.lat,lng:c.lng};
+    if(!pos||!pos.lng) return;
+    any=true;
+    var path=(c.stops&&c.stops.length)?c.stops:(c.path&&c.path.length?c.path:[{lat:c.lat,lng:c.lng,name:c.name||""}]);
+    var hd=0; try{ hd=headingAt(path, parts.prog); }catch(e){}
     var up=parts.upcoming||[];
     var back=parts.passed||[];
-    up.forEach(function(p){ if(p&&p.lng) bounds.extend([p.lng,p.lat]); });
-    back.slice(-4).forEach(function(p){ if(p&&p.lng) bounds.extend([p.lng,p.lat]); });
-    bounds.extend([pos.lng,pos.lat]);
-    if(up.length>1) upcoming.push({type:"Feature",geometry:{type:"LineString",coordinates:up.map(function(p){return [p.lng,p.lat];})}});
-    if(back.length>1) passed.push({type:"Feature",geometry:{type:"LineString",coordinates:back.slice(-6).concat([pos]).map(function(p){return [p.lng,p.lat];})}});
+    [pos].concat(up.slice(0,8)).concat(back.slice(-3)).forEach(function(p){ if(p&&p.lng) bounds.extend([p.lng,p.lat]); });
+    if(up.length>1) upcoming.push({type:"Feature",properties:{i:idx},geometry:{type:"LineString",coordinates:up.map(function(p){return [p.lng,p.lat];})}});
+    if(back.length>1) passed.push({type:"Feature",properties:{i:idx},geometry:{type:"LineString",coordinates:back.slice(-8).concat([pos]).map(function(p){return [p.lng,p.lat];})}});
     var dest=(c.etas&&c.etas[0]&&c.etas[0].dest)||c.dest||"";
-    var hint=nearHint(path,pos,c.name).replace(/<[^>]+>/g,"");
-    function popupHtml(){
-      var times=[0,1,2].map(function(n){
-        var e=c.etas&&c.etas[n];
-        var t=e?(e.text|| (e.min!=null?e.min+"分":"—")):"—";
-        return '<div class="peta"><span>第'+(n+1)+'班</span><b>'+t+'</b></div>';
-      }).join("");
-      return '<div class="bpop"><div class="bpop-h">'+(c.coName||"")+' '+(c.route||"")+'</div><div class="bpop-to">往 '+dest+'</div><div class="bpop-stop">'+(c.name||"")+' · '+hint+'</div><div class="bpop-times">'+times+'</div></div>';
-    }
-    if(map._marks && map._marks[key]){
-      map._marks[key].setLngLat([pos.lng,pos.lat]);
-      var body=map._marks[key].getElement().querySelector(".veh");
-      if(body){ body.innerHTML=busIcon(hd); }
-      map._marks[key]._html=popupHtml;
-    } else {
-      var d=document.createElement("div");
-      d.className="vbus";
-      d.innerHTML='<div class="veh">'+busIcon(hd)+'</div><div class="tag">'+(c.route||"")+'</div>';
-      d.title=(c.route||"")+" 往 "+dest+" · "+hint;
-      d.addEventListener("click", function(ev){
-        ev.stopPropagation();
-        if(map._pop){ try{ map._pop.remove(); }catch(e){} }
-        map._pop=new maplibregl.Popup({offset:22, closeButton:true, maxWidth:"280px"})
-          .setLngLat(map._marks[key].getLngLat())
-          .setHTML(map._marks[key]._html())
-          .addTo(map);
-      });
-      map._marks[key]=new maplibregl.Marker({element:d, anchor:"bottom"}).setLngLat([pos.lng,pos.lat]).addTo(map);
-      map._marks[key]._html=popupHtml;
-    }
+    var hint=""; try{ hint=nearHint(path,pos,c.name).replace(/<[^>]+>/g,""); }catch(e){}
+    var d=document.createElement("div");
+    d.className="vbus";
+    d.innerHTML='<div class="veh">'+busIcon(hd)+'</div><div class="tag">'+(c.route||"")+' '+(c.co==="KMB"?"九巴":"城巴")+'</div>';
+    d.addEventListener("click", function(ev){
+      ev.preventDefault(); ev.stopPropagation();
+      if(map._pop){ try{ map._pop.remove(); }catch(e){} }
+      map._pop=new maplibregl.Popup({offset:28, closeButton:true, maxWidth:"280px"})
+        .setLngLat([pos.lng,pos.lat]).setHTML(busPopupHtml(c, hint)).addTo(map);
+    });
+    var mk=new maplibregl.Marker({element:d, anchor:"bottom"}).setLngLat([pos.lng,pos.lat]).addTo(map);
+    map._marks[idx]=mk;
   });
   try{ map.getSource("live-passed").setData({type:"FeatureCollection",features:passed}); }catch(e){}
   try{ map.getSource("live-up").setData({type:"FeatureCollection",features:upcoming}); }catch(e){}
-  Object.keys(map._marks||{}).forEach(function(k){
-    if(!seen[k]){ try{ map._marks[k].remove(); }catch(e){} delete map._marks[k]; }
-  });
   if(state.loc){
     bounds.extend([state.loc.lng,state.loc.lat]);
     if(!map._you){
-      var y=document.createElement("div");
-      y.className="youdot";
+      var y=document.createElement("div"); y.className="youdot";
       map._you=new maplibregl.Marker({element:y, anchor:"center"}).setLngLat([state.loc.lng,state.loc.lat]).addTo(map);
     } else map._you.setLngLat([state.loc.lng,state.loc.lat]);
   }
+  var note=map.getContainer().querySelector(".mapcount");
+  if(!note){ note=document.createElement("div"); note.className="mapcount"; note.style.cssText="position:absolute;left:10px;bottom:10px;z-index:5;background:#111;color:#fff;border-radius:10px;padding:4px 8px;font-size:12px"; map.getContainer().appendChild(note); }
+  note.textContent="顯示 "+cards.length+" 架車 · 撳圖示睇到站";
   if(any && !map._userMoved){
-    try{ map.fitBounds(bounds, {padding:60, maxZoom:14.2, duration:600}); }catch(e){}
+    try{ map.fitBounds(bounds, {padding:70, maxZoom:14, duration:500}); }catch(e){}
   }
 }
 (function(){
