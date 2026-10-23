@@ -232,6 +232,16 @@ body.view-map #livemap{display:block}
 .viewtoggle{display:flex;background:#161821;border:1px solid rgba(255,255,255,.14);border-radius:999px;padding:3px;gap:2px}
 .viewtoggle button{border:0;background:transparent;color:#c9c3b8;border-radius:999px;padding:6px 14px;font-weight:800;font-size:13px;cursor:pointer}
 .viewtoggle button.on{background:#7dffc2;color:#10281f}
+
+.viewtoggle button{white-space:nowrap}
+.locacts{position:absolute;right:0;top:50%;transform:translateY(-50%);display:flex;align-items:center;gap:8px}
+.locrow .helpbtn{position:static;transform:none}
+.mobtoggle{display:none}
+@media (max-width:739px){
+  .nowbox .viewtoggle{display:none}
+  .mobtoggle{display:flex}
+  .locrow .sub{padding-right:150px}
+}
 </style>
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icon-192.png">
@@ -282,7 +292,7 @@ body.view-map #livemap{display:block}
   </div>
 </div>
 <div class="topbar">
-<div class="locrow"><p class="sub" id="locLine">正在開啟定位…</p><button class="helpbtn" id="helpBtn" type="button">導覽</button></div>
+<div class="locrow"><p class="sub" id="locLine">正在開啟定位…</p><div class="locacts"><div class="viewtoggle mobtoggle" id="viewbarMob"><button type="button" class="on" data-view="list">列表</button><button type="button" data-view="map">地圖</button></div><button class="helpbtn" id="helpBtn" type="button">導覽</button></div></div>
 <div class="row">
 <button class="ghost on" id="gpsBtn" type="button">開啟定位</button>
 <button class="ghost" id="homeBtn" type="button">我的常用位置</button>
@@ -324,7 +334,7 @@ body.view-map #livemap{display:block}
 <p class="msg" id="msg">搜尋路線或港鐵站，最近項目會留低。</p>
 </div>
 <div id="guide" class="guide"><div class="guidebox"><div class="gdots"></div><img class="gshot" alt=""><h3></h3><p></p><div class="gacts"><button class="gskip" type="button">跳過</button><button class="gnext" type="button">下一步</button></div></div></div><div id="livemap"></div><div id="feed"></div>
-<p class="fine">v22p · 九巴／龍運／城巴／港鐵公開資料 · 「原定班次」= 時間表，並非 GPS 實時車</p>
+<p class="fine">v22q · 九巴／龍運／城巴／港鐵公開資料 · 「原定班次」= 時間表，並非 GPS 實時車</p>
 </div>
 <div class="gate" id="gate">
   <div class="gatebox">
@@ -1972,7 +1982,7 @@ if(!localStorage.getItem("sw-guide-v5")) setTimeout(function(){ showGuide(0); },
 state.view=localStorage.getItem("sw-view")||"list";
 function applyView(){
   document.body.classList.toggle("view-map", state.view==="map");
-  [].forEach.call(document.querySelectorAll("#viewbar button"), function(b){
+  [].forEach.call(document.querySelectorAll("#viewbar button, #viewbarMob button"), function(b){
     b.classList.toggle("on", b.getAttribute("data-view")===state.view);
   });
   if(state.view==="map") renderLiveMap();
@@ -2120,13 +2130,17 @@ function placeLive(map){
   }
 }
 (function(){
-  var bar=$("viewbar"); if(!bar) return;
+  function bindView(bar){
+  if(!bar) return;
   bar.addEventListener("click", function(e){
     var b=e.target.closest("button"); if(!b) return;
     state.view=b.getAttribute("data-view");
     try{ localStorage.setItem("sw-view", state.view); }catch(e){}
     applyView();
   });
+  }
+  bindView($("viewbar"));
+  bindView($("viewbarMob"));
   applyView();
 })();
 
