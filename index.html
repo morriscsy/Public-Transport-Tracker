@@ -312,7 +312,7 @@ body.view-map #livemap{display:block}
 <p class="msg" id="msg">搜尋路線或港鐵站，最近項目會留低。</p>
 </div>
 <div id="guide" class="guide"><div class="guidebox"><div class="gdots"></div><img class="gshot" alt=""><h3></h3><p></p><div class="gacts"><button class="gskip" type="button">跳過</button><button class="gnext" type="button">下一步</button></div></div></div><div class="viewbar" id="viewbar"><button type="button" class="on" data-view="list">列表</button><button type="button" data-view="map">地圖</button></div><div id="livemap"></div><div id="feed"></div>
-<p class="fine">v22l · 九巴／龍運／城巴／港鐵公開資料 · 「原定班次」= 時間表，並非 GPS 實時車</p>
+<p class="fine">v22m · 九巴／龍運／城巴／港鐵公開資料 · 「原定班次」= 時間表，並非 GPS 實時車</p>
 </div>
 <div class="gate" id="gate">
   <div class="gatebox">
@@ -1307,9 +1307,8 @@ function focusStop(card,row){
     dragPan:true, dragRotate:false, touchZoomRotate:true, touchPitch:false, pitchWithRotate:false,
     pixelRatio:Math.min(window.devicePixelRatio||2, 3)
   });
-  if(map.dragPan) map.dragPan.disable();
-  if(map.touchZoomRotate) map.touchZoomRotate.disable();
-  if(map.scrollZoom) map.scrollZoom.disable();
+  map.on("dragstart", function(){ map._holdView=1; });
+  map.on("zoomstart", function(){ map._holdView=1; });
   map._holdView=1;
   map._focusAt=[lng,lat];
   map._card=c;
@@ -1783,14 +1782,11 @@ function mountCardMaps(cards){
             pitchWithRotate:false,
       pixelRatio:Math.min(window.devicePixelRatio||2, 3)
     });
-    if(map.dragPan) map.dragPan.disable();
-    if(map.touchZoomRotate) map.touchZoomRotate.disable();
-    if(map.scrollZoom) map.scrollZoom.disable();
-    bindMapTouch(map, el);
+    map.on("dragstart", function(){ map._holdView=1; });
+    map.on("zoomstart", function(){ map._holdView=1; });
     map.on("load",function(){
       tuneMap(map);
-      try{ map.resize(); }catch(e){} bindMapTouch(map, el);
-      setTimeout(function(){ bindMapTouch(map, el); }, 300);
+      try{ map.resize(); }catch(e){}
       if(path.length>1 || (c.ahead&&c.ahead.length>1)){
         map._flowPath=parts0.upcoming;
         map.addSource("passed",{type:"geojson",data:lineOf(parts0.passed)});
