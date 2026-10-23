@@ -226,6 +226,11 @@ body.view-map #livemap{display:block}
 .peta{background:#1c2128;border-radius:8px;padding:6px 8px;text-align:center;min-width:58px}
 .peta span{display:block;font-size:10px;color:#9a958b}
 .peta b{font-size:15px;color:#7dffc2}
+
+.nowbox{display:flex;flex-direction:column;align-items:flex-end;gap:6px}
+.viewtoggle{display:flex;background:#161821;border:1px solid rgba(255,255,255,.14);border-radius:999px;padding:3px;gap:2px}
+.viewtoggle button{border:0;background:transparent;color:#c9c3b8;border-radius:999px;padding:6px 14px;font-weight:800;font-size:13px;cursor:pointer}
+.viewtoggle button.on{background:#7dffc2;color:#10281f}
 </style>
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icon-192.png">
@@ -265,6 +270,10 @@ body.view-map #livemap{display:block}
     <h1>StationWise</h1>
   </div>
   <div class="nowbox">
+    <div class="viewtoggle" id="viewbar">
+      <button type="button" class="on" data-view="list">列表</button>
+      <button type="button" data-view="map">地圖</button>
+    </div>
     <div class="now-time" id="nowTime">--:--</div>
     <div class="now-date" id="nowDate">—</div>
   </div>
@@ -311,8 +320,8 @@ body.view-map #livemap{display:block}
 </div>
 <p class="msg" id="msg">搜尋路線或港鐵站，最近項目會留低。</p>
 </div>
-<div id="guide" class="guide"><div class="guidebox"><div class="gdots"></div><img class="gshot" alt=""><h3></h3><p></p><div class="gacts"><button class="gskip" type="button">跳過</button><button class="gnext" type="button">下一步</button></div></div></div><div class="viewbar" id="viewbar"><button type="button" class="on" data-view="list">列表</button><button type="button" data-view="map">地圖</button></div><div id="livemap"></div><div id="feed"></div>
-<p class="fine">v22n · 九巴／龍運／城巴／港鐵公開資料 · 「原定班次」= 時間表，並非 GPS 實時車</p>
+<div id="guide" class="guide"><div class="guidebox"><div class="gdots"></div><img class="gshot" alt=""><h3></h3><p></p><div class="gacts"><button class="gskip" type="button">跳過</button><button class="gnext" type="button">下一步</button></div></div></div><div id="livemap"></div><div id="feed"></div>
+<p class="fine">v22o · 九巴／龍運／城巴／港鐵公開資料 · 「原定班次」= 時間表，並非 GPS 實時車</p>
 </div>
 <div class="gate" id="gate">
   <div class="gatebox">
