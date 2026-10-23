@@ -312,7 +312,7 @@ body.view-map #livemap{display:block}
 <p class="msg" id="msg">搜尋路線或港鐵站，最近項目會留低。</p>
 </div>
 <div id="guide" class="guide"><div class="guidebox"><div class="gdots"></div><img class="gshot" alt=""><h3></h3><p></p><div class="gacts"><button class="gskip" type="button">跳過</button><button class="gnext" type="button">下一步</button></div></div></div><div class="viewbar" id="viewbar"><button type="button" class="on" data-view="list">列表</button><button type="button" data-view="map">地圖</button></div><div id="livemap"></div><div id="feed"></div>
-<p class="fine">v22k · 九巴／龍運／城巴／港鐵公開資料 · 「原定班次」= 時間表，並非 GPS 實時車</p>
+<p class="fine">v22l · 九巴／龍運／城巴／港鐵公開資料 · 「原定班次」= 時間表，並非 GPS 實時車</p>
 </div>
 <div class="gate" id="gate">
   <div class="gatebox">
@@ -1410,7 +1410,9 @@ function paint(){
     return;
   }
   if(!cards.length){
+    state._shown=[];
     $("feed").innerHTML='<div class="card">呢一頁暫時無班次。可轉「全部」或改路線分類。</div>';
+    if(state.view==='map') renderLiveMap();
     return;
   }
   cards.forEach(function(c){ c._key=cardKey(c); });
@@ -1964,8 +1966,13 @@ function applyView(){
   if(state.view==="map") renderLiveMap();
 }
 function liveCards(){
-  var src=(state._shown&&state._shown.length)?state._shown:(state.cards||[]);
-  return src.filter(function(c){return c.kind==="bus" && c.lat && c.lng;});
+  var on=state.items.filter(isOn);
+  var src=state.cards||[];
+  return src.filter(function(c){
+    if(c.kind!=="bus"||!c.lat||!c.lng) return false;
+    if(!on.length) return false;
+    return on.some(function(it){ return it.t==="bus" && String(c.route).toUpperCase()===String(it.k).toUpperCase(); });
+  });
 }
 function busPopupHtml(c, hint){
   var dest=(c.etas&&c.etas[0]&&c.etas[0].dest)||c.dest||"";
@@ -1995,7 +2002,9 @@ function renderLiveMap(){
     placeLive(el._map);
   }
 }
+var liveGen=0;
 function placeLive(map){
+  var gen=++liveGen;
   if(!map || !map.getStyle || (!map._loaded && !(map.isStyleLoaded&&map.isStyleLoaded()))){
     if(map) map.once("load", function(){ map._loaded=1; placeLive(map); });
     return;
@@ -2024,6 +2033,7 @@ function placeLive(map){
     var back=parts.passed||[];
     [pos].concat(up.slice(0,6)).forEach(function(p){ if(p&&p.lng) bounds.extend([p.lng,p.lat]); });
     jobs.push(Promise.all([roadLine(back.concat([pos])), roadLine(up)]).then(function(arr){
+      if(gen!==liveGen) return;
       var roadBack=arr[0]&&arr[0].length>1?arr[0]:back;
       var roadUp=arr[1]&&arr[1].length>1?arr[1]:up;
       var roadAll=roadBack.concat(roadUp);
@@ -2077,6 +2087,7 @@ function placeLive(map){
   }
   if(!map._scaleBound){ map._scaleBound=1; map.on("zoom", scaleBuses); }
   Promise.all(jobs).then(function(){
+    if(gen!==liveGen) return;
     try{ map.getSource("live-passed").setData({type:"FeatureCollection",features:passed}); }catch(e){}
     try{ map.getSource("live-up").setData({type:"FeatureCollection",features:upcoming}); }catch(e){}
     scaleBuses();
