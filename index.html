@@ -312,7 +312,7 @@ body.view-map #livemap{display:block}
 <p class="msg" id="msg">搜尋路線或港鐵站，最近項目會留低。</p>
 </div>
 <div id="guide" class="guide"><div class="guidebox"><div class="gdots"></div><img class="gshot" alt=""><h3></h3><p></p><div class="gacts"><button class="gskip" type="button">跳過</button><button class="gnext" type="button">下一步</button></div></div></div><div class="viewbar" id="viewbar"><button type="button" class="on" data-view="list">列表</button><button type="button" data-view="map">地圖</button></div><div id="livemap"></div><div id="feed"></div>
-<p class="fine">v22m · 九巴／龍運／城巴／港鐵公開資料 · 「原定班次」= 時間表，並非 GPS 實時車</p>
+<p class="fine">v22n · 九巴／龍運／城巴／港鐵公開資料 · 「原定班次」= 時間表，並非 GPS 實時車</p>
 </div>
 <div class="gate" id="gate">
   <div class="gatebox">
@@ -1711,6 +1711,7 @@ function bindMapTouch(map, el){
     pad._bound=0;
   }
   el.appendChild(pad);
+  pad.style.zIndex="40";
   if(pad._bound && pad._map===map) return;
   pad._bound=1; pad._map=map;
   var last=null, dist0=0, zoom0=0, mouse=false;
@@ -1784,9 +1785,12 @@ function mountCardMaps(cards){
     });
     map.on("dragstart", function(){ map._holdView=1; });
     map.on("zoomstart", function(){ map._holdView=1; });
+    bindMapTouch(map, el);
     map.on("load",function(){
       tuneMap(map);
       try{ map.resize(); }catch(e){}
+      bindMapTouch(map, el);
+      setTimeout(function(){ bindMapTouch(map, el); }, 200);
       if(path.length>1 || (c.ahead&&c.ahead.length>1)){
         map._flowPath=parts0.upcoming;
         map.addSource("passed",{type:"geojson",data:lineOf(parts0.passed)});
