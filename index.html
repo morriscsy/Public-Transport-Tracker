@@ -312,7 +312,7 @@ body.view-map #livemap{display:block}
 <p class="msg" id="msg">搜尋路線或港鐵站，最近項目會留低。</p>
 </div>
 <div id="guide" class="guide"><div class="guidebox"><div class="gdots"></div><img class="gshot" alt=""><h3></h3><p></p><div class="gacts"><button class="gskip" type="button">跳過</button><button class="gnext" type="button">下一步</button></div></div></div><div class="viewbar" id="viewbar"><button type="button" class="on" data-view="list">列表</button><button type="button" data-view="map">地圖</button></div><div id="livemap"></div><div id="feed"></div>
-<p class="fine">v22j · 九巴／龍運／城巴／港鐵公開資料 · 「原定班次」= 時間表，並非 GPS 實時車</p>
+<p class="fine">v22k · 九巴／龍運／城巴／港鐵公開資料 · 「原定班次」= 時間表，並非 GPS 實時車</p>
 </div>
 <div class="gate" id="gate">
   <div class="gatebox">
@@ -2027,7 +2027,20 @@ function placeLive(map){
       var roadBack=arr[0]&&arr[0].length>1?arr[0]:back;
       var roadUp=arr[1]&&arr[1].length>1?arr[1]:up;
       var roadAll=roadBack.concat(roadUp);
-      var roadPos=alongPath(roadAll, parts.prog)||roadUp[0]||pos;
+      function nearestOn(line, p){
+        if(!line||!line.length) return p;
+        var best=line[0], bd=1e9;
+        for(var i=1;i<line.length;i++){
+          var a=line[i-1], b=line[i];
+          var dx=b.lng-a.lng, dy=b.lat-a.lat, l2=dx*dx+dy*dy;
+          var t=l2?Math.max(0,Math.min(1,((p.lng-a.lng)*dx+(p.lat-a.lat)*dy)/l2)):0;
+          var q={lng:a.lng+dx*t, lat:a.lat+dy*t};
+          var d=(q.lng-p.lng)*(q.lng-p.lng)+(q.lat-p.lat)*(q.lat-p.lat);
+          if(d<bd){ bd=d; best=q; }
+        }
+        return best;
+      }
+      var roadPos=nearestOn(roadAll.length>1?roadAll:roadUp, pos)||roadUp[0]||pos;
       if(passed.length||upcoming.length||true){
         if(roadBack.length>1) passed.push({type:"Feature",properties:{i:idx},geometry:{type:"LineString",coordinates:roadBack.map(function(p){return [p.lng,p.lat];})}});
         if(roadUp.length>1) upcoming.push({type:"Feature",properties:{i:idx},geometry:{type:"LineString",coordinates:roadUp.map(function(p){return [p.lng,p.lat];})}});
